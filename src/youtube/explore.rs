@@ -53,27 +53,21 @@ pub async fn build_explore(
     queries.sort_by_key(|b| std::cmp::Reverse(b.score));
     queries.truncate(MAX_EXPLORE_QUERIES);
 
-    let results: Vec<Vec<YtTrack>> = futures_util::future::join_all(queries.iter().map(|seed| async {
-        let mut tracks = Vec::new();
-        let mut result_seen = HashSet::new();
+    let results: Vec<Vec<YtTrack>> =
+        futures_util::future::join_all(queries.iter().map(|seed| async {
+            let mut tracks = Vec::new();
+            let mut result_seen = HashSet::new();
 
-        if let Ok(youtube_tracks) = extractor
-            .search_youtube(seed.query.as_str(), seed.limit)
-            .await
-        {
-            append_unique(&mut tracks, &mut result_seen, youtube_tracks);
-        }
-
-        if tracks.len() < EXPLORE_TRACK_LIMIT {
-            let fill_limit = seed.limit.saturating_sub(tracks.len()).max(10);
-            if let Ok(music_tracks) = extractor.search(seed.query.as_str(), fill_limit).await {
-                append_unique(&mut tracks, &mut result_seen, music_tracks);
+            if let Ok(youtube_tracks) = extractor
+                .search_youtube(seed.query.as_str(), seed.limit)
+                .await
+            {
+                append_unique(&mut tracks, &mut result_seen, youtube_tracks);
             }
-        }
 
-        tracks
-    }))
-    .await;
+            tracks
+        }))
+        .await;
 
     for (seed, tracks) in queries.into_iter().zip(results) {
         let filtered = select_section_tracks(tracks, &mut seen_ids);
@@ -205,10 +199,7 @@ fn personalized_queries(
     }
 }
 
-fn mood_keywords(
-    keywords: &[(String, i64)],
-    artist_signals: &[(String, i64, i64)],
-) -> Vec<String> {
+fn mood_keywords(keywords: &[(String, i64)], artist_signals: &[(String, i64, i64)]) -> Vec<String> {
     let artist_blob = artist_signals
         .iter()
         .map(|(artist, _, _)| artist.to_lowercase())
@@ -226,7 +217,11 @@ fn mood_keywords(
 fn dedupe_queries(queries: &mut Vec<ExploreQuery>) {
     let mut seen = HashSet::new();
     queries.retain(|seed| {
-        let key = format!("{}|{}", seed.title.to_lowercase(), seed.query.to_lowercase());
+        let key = format!(
+            "{}|{}",
+            seed.title.to_lowercase(),
+            seed.query.to_lowercase()
+        );
         seen.insert(key)
     });
 }
@@ -367,8 +362,9 @@ fn capitalize(s: &str) -> String {
 }
 
 fn simple_hash(s: &str) -> usize {
-    s.bytes()
-        .fold(0usize, |acc, b| acc.wrapping_mul(31).wrapping_add(b as usize))
+    s.bytes().fold(0usize, |acc, b| {
+        acc.wrapping_mul(31).wrapping_add(b as usize)
+    })
 }
 
 fn chrono_bucket() -> usize {

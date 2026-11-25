@@ -1060,6 +1060,50 @@ fn contents(app: &mut App, ui: &mut egui::Ui, grid_art: Option<Rect>) {
     {
         app.actions.push(Action::FocusSearch);
     }
+    if nav_row(
+        ui,
+        &palette,
+        Icon::Compass,
+        &gettext(locale, "Explore"),
+        page == Page::Explore,
+    )
+    .clicked()
+    {
+        app.actions.push(Action::Open(Page::Explore));
+    }
+    if nav_row(
+        ui,
+        &palette,
+        Icon::ListMusic,
+        &gettext(locale, "Queue"),
+        page == Page::Queue,
+    )
+    .clicked()
+    {
+        app.actions.push(Action::Open(Page::Queue));
+    }
+    if nav_row(
+        ui,
+        &palette,
+        Icon::Music,
+        &gettext(locale, "Playlists"),
+        page == Page::Playlists,
+    )
+    .clicked()
+    {
+        app.actions.push(Action::Open(Page::Playlists));
+    }
+    if nav_row(
+        ui,
+        &palette,
+        Icon::Download,
+        &gettext(locale, "Downloads"),
+        page == Page::Downloads,
+    )
+    .clicked()
+    {
+        app.actions.push(Action::Open(Page::Downloads));
+    }
     ui.add_space(10.0);
     ui.painter().hline(
         ui.max_rect().x_range().shrink(4.0),

@@ -108,6 +108,10 @@ pub enum ApiRequest {
         generation: u64,
         force: bool,
     },
+    Explore {
+        force: bool,
+    },
+    Downloads,
     NewReleases {
         generation: u64,
     },
@@ -338,6 +342,8 @@ pub enum ApiResponse {
         result: ApiResult<Vec<Playlist>>,
         top_mixes: ApiResult<Vec<Playlist>>,
     },
+    Explore(ApiResult<Vec<(String, Vec<Track>)>>),
+    Downloads(ApiResult<Vec<crate::model::DownloadedTrack>>),
     NewReleases {
         generation: u64,
         result: ApiResult<Vec<Album>>,
@@ -635,6 +641,7 @@ pub enum Command {
     },
     Lyrics(Box<LyricsRequest>),
     Rootlist,
+    Reconnect,
     VerifyResume,
     ConfigurePersonalWebApp(Option<String>),
     LoadPlaylistCache {
@@ -684,6 +691,8 @@ pub enum Command {
         uri: String,
         generation: u64,
     },
+    DownloadTrack(Track),
+    DeleteDownload(String),
 }
 
 pub struct LyricsRequest {
@@ -813,6 +822,10 @@ pub enum Event {
         uri: String,
         saved: bool,
         generation: u64,
+        result: Result<(), String>,
+    },
+    DownloadFinished {
+        title: String,
         result: Result<(), String>,
     },
     AlbumType {
@@ -1361,8 +1374,11 @@ fn local_user() -> User {
 fn build_explore_playlists(
     sections: &[crate::youtube::ExploreSection],
     cache: &mut HashMap<String, Vec<YtTrack>>,
+    titles: &mut HashMap<String, String>,
+    section_cache: &mut Vec<(String, Vec<YtTrack>)>,
 ) -> Vec<Playlist> {
     let mut playlists = Vec::new();
+    section_cache.clear();
     for (idx, section) in sections.iter().enumerate() {
         let id = format!("explore_{idx}");
         let images = section
@@ -1372,6 +1388,8 @@ fn build_explore_playlists(
             .unwrap_or_default();
         let total = section.tracks.len() as u32;
         cache.insert(id.clone(), section.tracks.clone());
+        titles.insert(id.clone(), section.title.clone());
+        section_cache.push((section.title.clone(), section.tracks.clone()));
         playlists.push(Playlist {
             id: id.clone(),
             name: section.title.clone(),
@@ -1497,9 +1515,11 @@ struct Worker {
     waker: Waker,
     db: Arc<SearchCache>,
     extractor: Arc<Extractor>,
-    _downloads: Arc<DownloadManager>,
+    downloads: Arc<DownloadManager>,
     engine: Option<Engine>,
-    explore_cache: Arc<tokio::sync::Mutex<HashMap<String, Vec<YtTrack>>>>,
+    explore_cache: Arc<std::sync::Mutex<HashMap<String, Vec<YtTrack>>>>,
+    explore_titles: Arc<std::sync::Mutex<HashMap<String, String>>>,
+    explore_sections: Arc<std::sync::Mutex<Vec<(String, Vec<YtTrack>)>>>,
     _credentials: CredentialStore,
 }
 
@@ -1533,9 +1553,11 @@ impl Worker {
             waker,
             db,
             extractor,
-            _downloads: downloads,
+            downloads,
             engine: None,
-            explore_cache: Arc::new(tokio::sync::Mutex::new(HashMap::new())),
+            explore_cache: Arc::new(std::sync::Mutex::new(HashMap::new())),
+            explore_titles: Arc::new(std::sync::Mutex::new(HashMap::new())),
+            explore_sections: Arc::new(std::sync::Mutex::new(Vec::new())),
             _credentials: credentials,
         }
     }
@@ -1569,6 +1591,7 @@ impl Worker {
             &self.engine_config,
             Arc::clone(&self.db),
             Arc::clone(&self.extractor),
+            Arc::clone(&self.explore_cache),
             self.engine_notify(),
         ) {
             Ok(engine) => {
@@ -1639,6 +1662,7 @@ impl Worker {
                         &config,
                         Arc::clone(&self.db),
                         Arc::clone(&self.extractor),
+                        Arc::clone(&self.explore_cache),
                         self.engine_notify(),
                     ) {
                         Ok(engine) => {
@@ -1686,13 +1710,12 @@ impl Worker {
                                 }
                             }
                         }
-                        let _ = events.send(Event::Api(Box::new(
-                            ApiResponse::PlaylistItemsChanged {
+                        let _ =
+                            events.send(Event::Api(Box::new(ApiResponse::PlaylistItemsChanged {
                                 id: playlist_id,
                                 message: "Removed from playlist".into(),
                                 result: Ok(Some("local".into())),
-                            },
-                        )));
+                            })));
                         waker.wake();
                     });
                 }
@@ -1786,7 +1809,7 @@ impl Worker {
                     let waker = self.waker.clone();
                     tokio::task::spawn_blocking(move || {
                         let result = match request {
-                            AutostartRequest::Read => autostart().state(),
+                            AutostartRequest::Read => Ok(autostart().state()),
                             AutostartRequest::Set(mode) => autostart().set(mode),
                         };
                         let _ = events.send(Event::Autostart {
@@ -1826,9 +1849,7 @@ impl Worker {
                     tokio::spawn(async move {
                         let picked = selected.await;
                         let result = match picked {
-                            Some(handle) => {
-                                crate::playlist_cover::read(handle.path()).map(Some)
-                            }
+                            Some(handle) => crate::playlist_cover::read(handle.path()).map(Some),
                             None => Ok(None),
                         };
                         let _ = events.send(Event::PlaylistCoverChosen {
@@ -1939,6 +1960,64 @@ impl Worker {
                         waker.wake();
                     });
                 }
+                Command::Reconnect => {
+                    if self.engine.is_none() {
+                        self.start_local_backend().await;
+                    }
+                }
+                Command::DownloadTrack(track) => {
+                    if let Some(vid) = track
+                        .id
+                        .clone()
+                        .or_else(|| video_id_from_uri(&track.uri).map(str::to_string))
+                    {
+                        let yt_track = YtTrack {
+                            id: vid.clone(),
+                            title: track.name.clone(),
+                            artist: crate::api::models::join_names(
+                                track.artists.iter().map(|a| a.name.as_str()),
+                            ),
+                            thumbnail: track
+                                .album
+                                .as_ref()
+                                .and_then(|a| a.images.first())
+                                .map(|img| img.url.clone())
+                                .unwrap_or_default(),
+                            duration_secs: f64::from(track.duration_ms) / 1000.0,
+                            stream_url: None,
+                        };
+                        let downloads = Arc::clone(&self.downloads);
+                        let db = Arc::clone(&self.db);
+                        let events = self.events.clone();
+                        let waker = self.waker.clone();
+                        let title = yt_track.title.clone();
+                        tokio::spawn(async move {
+                            let res = downloads.download(&db, &yt_track, |_| {}).await;
+                            let _ = events.send(Event::DownloadFinished { title, result: res });
+                            waker.wake();
+                        });
+                    }
+                }
+                Command::DeleteDownload(vid) => {
+                    let downloads = Arc::clone(&self.downloads);
+                    let db = Arc::clone(&self.db);
+                    let events = self.events.clone();
+                    let waker = self.waker.clone();
+                    tokio::task::spawn_blocking(move || {
+                        let _ = downloads.delete(&db, &vid);
+                        let rows = db.list_downloads().unwrap_or_default();
+                        let list = rows
+                            .into_iter()
+                            .map(|(t, path, size_bytes)| crate::model::DownloadedTrack {
+                                track: to_spotify_track(&t),
+                                path,
+                                size_bytes,
+                            })
+                            .collect();
+                        let _ = events.send(Event::Api(Box::new(ApiResponse::Downloads(Ok(list)))));
+                        waker.wake();
+                    });
+                }
                 Command::UserNames(_)
                 | Command::AlbumTypes(_)
                 | Command::AudiobookShows(_)
@@ -1967,6 +2046,8 @@ impl Worker {
         let waker = self.waker.clone();
         let activity = Arc::clone(&self.activity);
         let explore_cache = Arc::clone(&self.explore_cache);
+        let explore_titles = Arc::clone(&self.explore_titles);
+        let explore_sections = Arc::clone(&self.explore_sections);
 
         let local_device = Device {
             id: self.engine.as_ref().map(|e| e.device_id().to_string()),
@@ -2097,54 +2178,97 @@ impl Worker {
 
                 ApiRequest::Search { query, serial }
                 | ApiRequest::SearchCatalogue { query, serial } => {
-                    let res = match extractor.search(&query, 25).await {
-                        Ok(tracks) => {
-                            let db2 = Arc::clone(&db);
-                            let tracks_for_db = tracks.clone();
-                            let _ = tokio::task::spawn_blocking(move || {
-                                let _ = db2.upsert_tracks(&tracks_for_db);
-                            })
-                            .await;
-                            let sp_tracks: Vec<Track> =
-                                tracks.iter().map(to_spotify_track).collect();
-                            let mut seen_artists = BTreeMap::<String, Artist>::new();
-                            for t in &tracks {
-                                let key = encode_artist_id(&t.artist);
-                                seen_artists.entry(key).or_insert_with(|| {
-                                    artist_from_name(
-                                        &t.artist,
-                                        (!t.thumbnail.is_empty()).then_some(t.thumbnail.as_str()),
-                                    )
-                                });
-                            }
-                            let artists: Vec<Artist> = seen_artists.into_values().collect();
-                            Ok(SearchResults {
-                                tracks: Some(Page {
-                                    total: sp_tracks.len() as u32,
-                                    limit: 50,
-                                    offset: 0,
-                                    next: None,
-                                    items: sp_tracks,
-                                }),
-                                artists: Some(Page {
-                                    total: artists.len() as u32,
-                                    limit: 50,
-                                    offset: 0,
-                                    next: None,
-                                    items: artists,
-                                }),
-                                albums: Some(empty_page(0, 50)),
-                                playlists: Some(empty_page(0, 50)),
-                                shows: Some(empty_page(0, 50)),
-                                episodes: Some(empty_page(0, 50)),
-                            })
+                    let trimmed = query.trim().to_string();
+                    if trimmed.is_empty() {
+                        ApiResponse::Search {
+                            query,
+                            serial,
+                            result: Ok(SearchResults::default()),
                         }
-                        Err(e) => Err(ApiError::Network(e.to_string())),
-                    };
-                    ApiResponse::Search {
-                        query,
-                        serial,
-                        result: res,
+                    } else {
+                        let db_local = Arc::clone(&db);
+                        let q_local = trimmed.clone();
+                        let local_tracks = tokio::task::spawn_blocking(move || {
+                            db_local.search_local(&q_local).unwrap_or_default()
+                        })
+                        .await
+                        .unwrap_or_default();
+                        let res = match extractor.search_youtube(&trimmed, 25).await {
+                            Ok(remote_tracks) => {
+                                let db2 = Arc::clone(&db);
+                                let to_upsert = remote_tracks.clone();
+                                let _ = tokio::task::spawn_blocking(move || {
+                                    let _ = db2.upsert_tracks(&to_upsert);
+                                })
+                                .await;
+                                let mut seen = std::collections::HashSet::new();
+                                let mut combined =
+                                    Vec::with_capacity(remote_tracks.len() + local_tracks.len());
+                                for t in remote_tracks.into_iter().chain(local_tracks.into_iter()) {
+                                    if seen.insert(t.id.clone()) {
+                                        combined.push(t);
+                                    }
+                                }
+                                let sp_tracks: Vec<Track> =
+                                    combined.iter().map(to_spotify_track).collect();
+                                let mut seen_artists = BTreeMap::<String, Artist>::new();
+                                for t in &combined {
+                                    let key = encode_artist_id(&t.artist);
+                                    seen_artists.entry(key).or_insert_with(|| {
+                                        artist_from_name(
+                                            &t.artist,
+                                            (!t.thumbnail.is_empty())
+                                                .then_some(t.thumbnail.as_str()),
+                                        )
+                                    });
+                                }
+                                let artists: Vec<Artist> = seen_artists.into_values().collect();
+                                Ok(SearchResults {
+                                    tracks: Some(Page {
+                                        total: sp_tracks.len() as u32,
+                                        limit: 50,
+                                        offset: 0,
+                                        next: None,
+                                        items: sp_tracks,
+                                    }),
+                                    artists: Some(Page {
+                                        total: artists.len() as u32,
+                                        limit: 50,
+                                        offset: 0,
+                                        next: None,
+                                        items: artists,
+                                    }),
+                                    albums: Some(empty_page(0, 50)),
+                                    playlists: Some(empty_page(0, 50)),
+                                    shows: Some(empty_page(0, 50)),
+                                    episodes: Some(empty_page(0, 50)),
+                                })
+                            }
+                            Err(_e) if !local_tracks.is_empty() => {
+                                let sp_tracks: Vec<Track> =
+                                    local_tracks.iter().map(to_spotify_track).collect();
+                                Ok(SearchResults {
+                                    tracks: Some(Page {
+                                        total: sp_tracks.len() as u32,
+                                        limit: 50,
+                                        offset: 0,
+                                        next: None,
+                                        items: sp_tracks,
+                                    }),
+                                    artists: Some(empty_page(0, 50)),
+                                    albums: Some(empty_page(0, 50)),
+                                    playlists: Some(empty_page(0, 50)),
+                                    shows: Some(empty_page(0, 50)),
+                                    episodes: Some(empty_page(0, 50)),
+                                })
+                            }
+                            Err(e) => Err(ApiError::Network(e.to_string())),
+                        };
+                        ApiResponse::Search {
+                            query,
+                            serial,
+                            result: res,
+                        }
                     }
                 }
 
@@ -2182,13 +2306,11 @@ impl Worker {
                     serial,
                 } => {
                     let res = extractor
-                        .search(&query, 10)
+                        .search_youtube(&query, 10)
                         .await
                         .map(|tracks| {
                             let _ = db.upsert_tracks(&tracks);
-                            tracks
-                                .first()
-                                .map(|t| format!("spotify:track:{}", t.id))
+                            tracks.first().map(|t| format!("spotify:track:{}", t.id))
                         })
                         .map_err(|e| ApiError::Network(e.to_string()));
                     ApiResponse::PlaySearch {
@@ -2230,7 +2352,18 @@ impl Worker {
                 }
 
                 ApiRequest::Playlist { id, generation } => {
-                    if let Some(tracks) = explore_cache.lock().await.get(&id).cloned() {
+                    let cached = explore_cache
+                        .lock()
+                        .unwrap_or_else(|p| p.into_inner())
+                        .get(&id)
+                        .cloned();
+                    if let Some(tracks) = cached {
+                        let name = explore_titles
+                            .lock()
+                            .unwrap_or_else(|p| p.into_inner())
+                            .get(&id)
+                            .cloned()
+                            .unwrap_or_else(|| "Resonix Mix".into());
                         let images = tracks
                             .first()
                             .map(|t| thumbnail_images(&t.thumbnail))
@@ -2238,7 +2371,7 @@ impl Worker {
                         let total = tracks.len() as u32;
                         let pl = Playlist {
                             id: id.clone(),
-                            name: "Resonix Mix".into(),
+                            name,
                             description: None,
                             images,
                             owner: Owner {
@@ -2294,7 +2427,12 @@ impl Worker {
                     offset,
                     generation,
                 } => {
-                    if let Some(tracks) = explore_cache.lock().await.get(&id).cloned() {
+                    let cached = explore_cache
+                        .lock()
+                        .unwrap_or_else(|p| p.into_inner())
+                        .get(&id)
+                        .cloned();
+                    if let Some(tracks) = cached {
                         let total = tracks.len() as u32;
                         let items: Vec<PlaylistItem> = tracks
                             .iter()
@@ -2639,6 +2777,7 @@ impl Worker {
                             .map_err(|e| ApiError::Network(e.to_string()))
                             .and_then(|r| r.map_err(|e| ApiError::Network(e.to_string())))
                             .map(|tracks| CursorPage {
+                                total: Some(tracks.len() as u32),
                                 items: tracks
                                     .iter()
                                     .map(|t| PlayHistory {
@@ -2713,18 +2852,92 @@ impl Worker {
                     }
                 }
 
-                ApiRequest::MadeForYou { generation, .. } => {
-                    let sections = explore::build_explore(&db, &extractor)
-                        .await
-                        .unwrap_or_default();
-                    let mut cache = explore_cache.lock().await;
-                    let playlists = build_explore_playlists(&sections, &mut cache);
+                ApiRequest::MadeForYou { generation, force } => {
+                    let cached_sections = (!force)
+                        .then(|| {
+                            explore_sections
+                                .lock()
+                                .unwrap_or_else(|p| p.into_inner())
+                                .clone()
+                        })
+                        .filter(|s| !s.is_empty());
+                    let sections: Vec<crate::youtube::ExploreSection> = match cached_sections {
+                        Some(s) => s
+                            .into_iter()
+                            .map(|(title, tracks)| crate::youtube::ExploreSection { title, tracks })
+                            .collect(),
+                        None => explore::build_explore(&db, &extractor)
+                            .await
+                            .unwrap_or_default(),
+                    };
+                    let playlists = {
+                        let mut cache = explore_cache.lock().unwrap_or_else(|p| p.into_inner());
+                        let mut titles = explore_titles.lock().unwrap_or_else(|p| p.into_inner());
+                        let mut sec_cache =
+                            explore_sections.lock().unwrap_or_else(|p| p.into_inner());
+                        build_explore_playlists(&sections, &mut cache, &mut titles, &mut sec_cache)
+                    };
                     ApiResponse::MadeForYou {
                         generation,
                         personalized: true,
                         result: Ok(playlists),
                         top_mixes: Ok(Vec::new()),
                     }
+                }
+
+                ApiRequest::Explore { force } => {
+                    let cached_sections = (!force)
+                        .then(|| {
+                            explore_sections
+                                .lock()
+                                .unwrap_or_else(|p| p.into_inner())
+                                .clone()
+                        })
+                        .filter(|s| !s.is_empty());
+                    let sections: Vec<crate::youtube::ExploreSection> = match cached_sections {
+                        Some(s) => s
+                            .into_iter()
+                            .map(|(title, tracks)| crate::youtube::ExploreSection { title, tracks })
+                            .collect(),
+                        None => explore::build_explore(&db, &extractor)
+                            .await
+                            .unwrap_or_default(),
+                    };
+                    {
+                        let mut cache = explore_cache.lock().unwrap_or_else(|p| p.into_inner());
+                        let mut titles = explore_titles.lock().unwrap_or_else(|p| p.into_inner());
+                        let mut sec_cache =
+                            explore_sections.lock().unwrap_or_else(|p| p.into_inner());
+                        let _ = build_explore_playlists(
+                            &sections,
+                            &mut cache,
+                            &mut titles,
+                            &mut sec_cache,
+                        );
+                    }
+                    let converted: Vec<(String, Vec<Track>)> = sections
+                        .into_iter()
+                        .map(|s| (s.title, s.tracks.iter().map(to_spotify_track).collect()))
+                        .collect();
+                    ApiResponse::Explore(Ok(converted))
+                }
+
+                ApiRequest::Downloads => {
+                    let db2 = Arc::clone(&db);
+                    let res = tokio::task::spawn_blocking(move || db2.list_downloads())
+                        .await
+                        .map_err(|e| ApiError::Network(e.to_string()))
+                        .and_then(|r| r.map_err(|e| ApiError::Network(e.to_string())))
+                        .map(|rows| {
+                            rows.into_iter()
+                                .map(|(t, path, size_bytes)| crate::model::DownloadedTrack {
+                                    track: to_spotify_track(&t),
+                                    path,
+                                    size_bytes,
+                                })
+                                .collect()
+                        });
+                    ApiResponse::Downloads(res)
                 }
 
                 ApiRequest::Recommendations {
@@ -2743,7 +2956,7 @@ impl Worker {
                         query = name;
                     }
                     let res = extractor
-                        .search(&query, 20)
+                        .search_youtube(&query, 20)
                         .await
                         .map(|tracks| {
                             let _ = db.upsert_tracks(&tracks);
@@ -2783,7 +2996,7 @@ impl Worker {
                 ApiRequest::ArtistTopTracks { id, generation } => {
                     let name = decode_artist_id(&id).unwrap_or_else(|| id.clone());
                     let res = extractor
-                        .search(&name, 20)
+                        .search_youtube(&name, 20)
                         .await
                         .map(|tracks| {
                             let _ = db.upsert_tracks(&tracks);
@@ -2797,11 +3010,7 @@ impl Worker {
                     }
                 }
 
-                ApiRequest::ArtistAlbums {
-                    id,
-                    groups,
-                    offset,
-                } => ApiResponse::ArtistAlbums {
+                ApiRequest::ArtistAlbums { id, groups, offset } => ApiResponse::ArtistAlbums {
                     id,
                     groups,
                     offset,
@@ -2813,24 +3022,56 @@ impl Worker {
                     result: Ok(Vec::new()),
                 },
 
-                ApiRequest::Album { id } => ApiResponse::Album {
-                    id,
-                    result: Err(ApiError::Status {
-                        status: 404,
-                        message: "Albums are not indexed separately on YouTube".into(),
-                    }),
-                },
+                ApiRequest::Album { id } => {
+                    let vid = id.strip_prefix("yt_").unwrap_or(&id).to_string();
+                    let db2 = Arc::clone(&db);
+                    let res = tokio::task::spawn_blocking(move || db2.get_track_by_id(&vid))
+                        .await
+                        .ok()
+                        .and_then(|r| r.ok())
+                        .flatten()
+                        .and_then(|t| to_spotify_track(&t).album);
+                    ApiResponse::Album {
+                        id,
+                        result: res.ok_or_else(|| ApiError::Status {
+                            status: 404,
+                            message: "Track info not found".into(),
+                        }),
+                    }
+                }
 
                 ApiRequest::AlbumTracks {
                     id,
                     offset,
                     generation,
-                } => ApiResponse::AlbumTracks {
-                    id,
-                    offset,
-                    generation,
-                    result: Ok(empty_page(offset, 50)),
-                },
+                } => {
+                    let vid = id.strip_prefix("yt_").unwrap_or(&id).to_string();
+                    let db2 = Arc::clone(&db);
+                    let items = if offset == 0 {
+                        tokio::task::spawn_blocking(move || db2.get_track_by_id(&vid))
+                            .await
+                            .ok()
+                            .and_then(|r| r.ok())
+                            .flatten()
+                            .map(|t| vec![to_spotify_track(&t)])
+                            .unwrap_or_default()
+                    } else {
+                        Vec::new()
+                    };
+                    let total = items.len() as u32;
+                    ApiResponse::AlbumTracks {
+                        id,
+                        offset,
+                        generation,
+                        result: Ok(Page {
+                            total,
+                            limit: 50,
+                            offset,
+                            next: None,
+                            items,
+                        }),
+                    }
+                }
 
                 ApiRequest::AlbumQueueTracks {
                     id: _,
@@ -2903,6 +3144,7 @@ impl Worker {
                 ApiRequest::FollowedArtists { after } => ApiResponse::FollowedArtists {
                     after,
                     result: Ok(CursorPage {
+                        total: Some(0),
                         items: Vec::new(),
                         next: None,
                         cursors: None,
@@ -2946,7 +3188,8 @@ impl Worker {
                         RemoteAction::Previous => Some(PlayerCommand::Previous),
                         RemoteAction::Seek => Some(PlayerCommand::Seek(position_ms)),
                         RemoteAction::Volume { .. } => {
-                            let v = (u32::from(percent.min(100)) * u32::from(u16::MAX) / 100) as u16;
+                            let v =
+                                (u32::from(percent.min(100)) * u32::from(u16::MAX) / 100) as u16;
                             Some(PlayerCommand::Volume(v))
                         }
                         RemoteAction::Shuffle => Some(PlayerCommand::Shuffle(flag)),

@@ -926,6 +926,8 @@ pub struct App {
     /// The window's pixels per point when it last drew, so artwork chosen
     /// away from the drawing code fits the display it lands on.
     pub pixels_per_point: f32,
+    pub explore_sections: Loadable<Vec<(String, Vec<Track>)>>,
+    pub downloads: Loadable<Vec<crate::model::DownloadedTrack>>,
 }
 
 /// How many plays the Home shelf asks for: it shows sixteen cards.
@@ -1535,6 +1537,8 @@ impl App {
             winamp: crate::winamp::WinampState::new(session.winamp_pos, tap, eq),
             player_bar_analyser: crate::vis::WideAnalyser::default(),
             pixels_per_point: 1.0,
+            explore_sections: Loadable::NotLoaded,
+            downloads: Loadable::NotLoaded,
         };
         app.local.volume = app.settings.volume;
         if let Some(folder) = app.settings.local_files_folder() {
@@ -3229,6 +3233,19 @@ impl App {
                         }
                     }
                 }
+                Event::DownloadFinished { title, result } => match result {
+                    Ok(()) => {
+                        self.toast(
+                            gettext(self.locale, "Downloaded {name}").replace("{name}", &title),
+                        );
+                        if !matches!(self.downloads, Loadable::NotLoaded) {
+                            self.backend.api(ApiRequest::Downloads);
+                        }
+                    }
+                    Err(error) => {
+                        self.toast_error(format!("{title}: {error}"));
+                    }
+                },
             }
         }
     }
@@ -3600,6 +3617,21 @@ impl App {
                 if incomplete {
                     self.load_home(true);
                 }
+            }
+            Page::Explore => {
+                if self.explore_sections.get().is_none() {
+                    self.explore_sections = Loadable::Loading;
+                    self.backend.api(ApiRequest::Explore { force: false });
+                }
+            }
+            Page::Playlists => {
+                if self.library.playlists.needs_load() {
+                    self.load_playlists();
+                }
+            }
+            Page::Downloads => {
+                self.downloads = Loadable::Loading;
+                self.backend.api(ApiRequest::Downloads);
             }
             Page::TopSongs => {
                 if self.home.top_songs.get().is_none() {
@@ -6406,6 +6438,23 @@ impl App {
                     self.load_home(self.home.refresh_failed);
                 }
             }
+            Page::Explore => {
+                if self.network_reachable && self.explore_sections.needs_load() {
+                    self.explore_sections = Loadable::Loading;
+                    self.backend.api(ApiRequest::Explore { force: false });
+                }
+            }
+            Page::Playlists => {
+                if self.network_reachable && self.library.playlists.needs_load() {
+                    self.load_playlists();
+                }
+            }
+            Page::Downloads => {
+                if self.downloads.needs_load() {
+                    self.downloads = Loadable::Loading;
+                    self.backend.api(ApiRequest::Downloads);
+                }
+            }
             Page::TopSongs => {
                 if self.network_reachable {
                     self.load_top_songs(false);
@@ -7189,6 +7238,15 @@ impl App {
     fn reload(&mut self, page: Page) {
         match &page {
             Page::Home => self.load_home(true),
+            Page::Explore => {
+                self.explore_sections = Loadable::Loading;
+                self.backend.api(ApiRequest::Explore { force: true });
+            }
+            Page::Playlists => self.load_playlists(),
+            Page::Downloads => {
+                self.downloads = Loadable::Loading;
+                self.backend.api(ApiRequest::Downloads);
+            }
             Page::TopSongs => self.load_top_songs(true),
             Page::NewReleases => {
                 self.load_new_releases();
@@ -8570,16 +8628,7 @@ impl App {
                                 .filter_map(|track| track.id.clone())
                                 .take(5)
                                 .collect();
-                            if seeds.is_empty() {
-                                // Nothing to seed recommendations with: an empty
-                                // shelf is hidden, where one never asked for would
-                                // show its loading rows for good.
-                                if generation == self.home.generation
-                                    && self.home.recommendations.get().is_none()
-                                {
-                                    self.home.recommendations = Loadable::Loaded(Vec::new());
-                                }
-                            } else if generation == self.home.generation {
+                            if generation == self.home.generation {
                                 if self.home.recommendations.get().is_none() {
                                     self.home.recommendations = Loadable::Loading;
                                 }
@@ -8658,6 +8707,12 @@ impl App {
                     self.home.made_for_you_loading = false;
                     self.home_answered(changed);
                 }
+            }
+            ApiResponse::Explore(result) => {
+                self.explore_sections.refresh(result);
+            }
+            ApiResponse::Downloads(result) => {
+                self.downloads = Loadable::from_result(result);
             }
             ApiResponse::NewReleases { generation, result } => {
                 if generation != self.home.new_releases_generation {
@@ -14236,6 +14291,22 @@ impl App {
                             .replace("{name}", pack.name),
                     );
                 }
+            }
+            Action::DownloadTrack(track) => {
+                let name = track.name.clone();
+                self.backend.send(Command::DownloadTrack(track));
+                self.toast(gettext(self.locale, "Downloading {name}").replace("{name}", &name));
+            }
+            Action::DeleteDownload(id) => {
+                self.backend.send(Command::DeleteDownload(id));
+            }
+            Action::RefreshExplore => {
+                self.explore_sections = Loadable::Loading;
+                self.backend.api(ApiRequest::Explore { force: true });
+            }
+            Action::RefreshDownloads => {
+                self.downloads = Loadable::Loading;
+                self.backend.api(ApiRequest::Downloads);
             }
             Action::Quit => {
                 self.quit_requested = true;

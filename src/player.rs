@@ -24,7 +24,7 @@ use crate::eq::{NUM_CHANNELS, SAMPLE_RATE};
 use crate::resample::Resampler;
 use crate::sink::{AtomicVolume, AudioControl, AudioPacket, RodioSink, Sink as _};
 use crate::vis::{AudioTap, Tapped};
-use crate::youtube::models::encode_artist_id;
+use crate::youtube::models::{decode_artist_id, encode_artist_id};
 use crate::youtube::process::NoWindow;
 use crate::youtube::{DownloadManager, Extractor, SearchCache, YtTrack, cookies, ytdlp};
 
@@ -247,15 +247,9 @@ pub enum PlayerCommand {
 pub enum EngineEvent {
     State(LocalState),
     SessionEnded,
-    AudioDevice {
-        name: String,
-        id: String,
-    },
+    AudioDevice { name: String, id: String },
     RemoteChanged,
-    RemoteVolume {
-        device_id: String,
-        volume: u16,
-    },
+    RemoteVolume { device_id: String, volume: u16 },
 }
 
 pub type Notify = Arc<dyn Fn(EngineEvent) + Send + Sync>;
@@ -512,6 +506,7 @@ impl Engine {
         config: &EngineConfig,
         db: Arc<SearchCache>,
         extractor: Arc<Extractor>,
+        explore_cache: Arc<Mutex<HashMap<String, Vec<YtTrack>>>>,
         notify: Notify,
     ) -> Result<Self> {
         let device_id = config.device_id();
@@ -577,6 +572,7 @@ impl Engine {
                 engine_msg_tx,
                 db,
                 extractor,
+                explore_cache,
                 cache_dir,
                 state_dir,
                 cache_limit,
@@ -671,7 +667,10 @@ impl Engine {
 }
 
 fn push_feeder(ctl: &FeederControl, cmd: FeederCmd) {
-    ctl.inbox.lock().unwrap_or_else(|p| p.into_inner()).push_back(cmd);
+    ctl.inbox
+        .lock()
+        .unwrap_or_else(|p| p.into_inner())
+        .push_back(cmd);
     ctl.wake.notify_all();
 }
 
@@ -681,6 +680,7 @@ async fn run_coordinator(
     msg_tx: mpsc::UnboundedSender<EngineMsg>,
     db: Arc<SearchCache>,
     extractor: Arc<Extractor>,
+    explore_cache: Arc<Mutex<HashMap<String, Vec<YtTrack>>>>,
     cache_dir: PathBuf,
     state_dir: PathBuf,
     cache_limit: Option<u64>,
@@ -1030,7 +1030,10 @@ async fn run_coordinator(
                 }
 
                 PlayerCommand::Previous => {
-                    let pos_now = state.lock().unwrap_or_else(|p| p.into_inner()).position_now();
+                    let pos_now = state
+                        .lock()
+                        .unwrap_or_else(|p| p.into_inner())
+                        .position_now();
                     let cur_uri = queue
                         .lock()
                         .unwrap_or_else(|p| p.into_inner())
@@ -1210,7 +1213,7 @@ async fn run_coordinator(
                     if uris.is_empty()
                         && let Some(ctx_uri) = spec.context_uri.as_deref()
                     {
-                        uris = resolve_context_uris(&db, ctx_uri);
+                        uris = resolve_context_uris(&db, &explore_cache, ctx_uri);
                     }
                     if uris.is_empty() {
                         if let Some(offset) = spec.offset_uri.clone() {
@@ -1270,7 +1273,11 @@ async fn run_coordinator(
     }
 }
 
-fn advance_queue(queue: &Arc<Mutex<QueueState>>, repeat: RepeatMode, natural_end: bool) -> Option<String> {
+fn advance_queue(
+    queue: &Arc<Mutex<QueueState>>,
+    repeat: RepeatMode,
+    natural_end: bool,
+) -> Option<String> {
     let mut q = queue.lock().unwrap_or_else(|p| p.into_inner());
     if let Some(next_manual) = q.manual_queue.pop_front() {
         q.playing_manual = true;
@@ -1296,7 +1303,14 @@ fn advance_queue(queue: &Arc<Mutex<QueueState>>, repeat: RepeatMode, natural_end
     None
 }
 
-fn resolve_context_uris(db: &SearchCache, context_uri: &str) -> Vec<String> {
+fn resolve_context_uris(
+    db: &SearchCache,
+    explore_cache: &Mutex<HashMap<String, Vec<YtTrack>>>,
+    context_uri: &str,
+) -> Vec<String> {
+    if context_uri.starts_with("spotify:track:") || context_uri.starts_with("youtube:video:") {
+        return vec![context_uri.to_string()];
+    }
     if context_uri.ends_with(":collection") || context_uri == "spotify:collection:tracks" {
         if let Ok((liked, _)) = db.liked_tracks(0, 500) {
             return liked
@@ -1305,14 +1319,40 @@ fn resolve_context_uris(db: &SearchCache, context_uri: &str) -> Vec<String> {
                 .collect();
         }
     }
-    if let Some(pl_id_str) = context_uri.strip_prefix("spotify:playlist:")
-        && let Ok(pl_id) = pl_id_str.parse::<i64>()
-        && let Ok(tracks) = db.get_playlist_tracks(pl_id)
+    if let Some(pl_id_str) = context_uri.strip_prefix("spotify:playlist:") {
+        if let Some(tracks) = explore_cache
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .get(pl_id_str)
+            .filter(|t| !t.is_empty())
+        {
+            return tracks
+                .iter()
+                .map(|t| format!("spotify:track:{}", t.id))
+                .collect();
+        }
+        if let Ok(pl_id) = pl_id_str.parse::<i64>()
+            && let Ok(tracks) = db.get_playlist_tracks(pl_id)
+        {
+            return tracks
+                .into_iter()
+                .map(|t| format!("spotify:track:{}", t.id))
+                .collect();
+        }
+    }
+    if let Some(artist_id) = context_uri.strip_prefix("spotify:artist:")
+        && let Some(name) = decode_artist_id(artist_id)
+        && let Ok(tracks) = db.search_local(&name)
     {
         return tracks
             .into_iter()
             .map(|t| format!("spotify:track:{}", t.id))
             .collect();
+    }
+    if let Some(album_id) = context_uri.strip_prefix("spotify:album:")
+        && let Some(vid) = album_id.strip_prefix("yt_")
+    {
+        return vec![format!("spotify:track:{vid}")];
     }
     Vec::new()
 }
@@ -1369,7 +1409,10 @@ async fn prepare_audio_track(
     let yt_track = match existing {
         Some(t) => t,
         None => {
-            let meta = extractor.metadata(&video_id).await.map_err(|e| anyhow!("{e}"))?;
+            let meta = extractor
+                .metadata(&video_id)
+                .await
+                .map_err(|e| anyhow!("{e}"))?;
             let db_clone = Arc::clone(db);
             let meta_clone = meta.clone();
             tokio::task::spawn_blocking(move || {
@@ -1381,6 +1424,12 @@ async fn prepare_audio_track(
         }
     };
     let local_track = local_track_from_yt(&yt_track);
+    let db_listen = Arc::clone(db);
+    let vid_listen = video_id.clone();
+    let _ = tokio::task::spawn_blocking(move || {
+        let _ = db_listen.record_listen(&vid_listen);
+    })
+    .await;
 
     // 1. Check offline downloaded MP3.
     let dl_path = DownloadManager::new(state_dir).path_for(&video_id);
@@ -1615,9 +1664,8 @@ fn spawn_audio_feeder(
                             }) {
                                 Ok(mut dec) => {
                                     if start_ms > 0 {
-                                        let _ = dec.try_seek(Duration::from_millis(u64::from(
-                                            start_ms,
-                                        )));
+                                        let _ = dec
+                                            .try_seek(Duration::from_millis(u64::from(start_ms)));
                                     }
                                     let src_rate = dec.sample_rate();
                                     let channels = dec.channels();
@@ -1719,8 +1767,7 @@ fn spawn_audio_feeder(
                         Some(r) => r.process(&stereo_f32),
                         None => stereo_f32,
                     };
-                    let f64_samples: Vec<f64> =
-                        resampled.into_iter().map(f64::from).collect();
+                    let f64_samples: Vec<f64> = resampled.into_iter().map(f64::from).collect();
                     if let Err(err) = tapped.write(AudioPacket::Samples(f64_samples)) {
                         let track_gen = act.generation;
                         active = None;
@@ -1738,7 +1785,9 @@ fn spawn_audio_feeder(
                     let track_gen = act.generation;
                     active = None;
                     let _ = tapped.stop();
-                    let _ = msg_tx.send(EngineMsg::TrackEnded { generation: track_gen });
+                    let _ = msg_tx.send(EngineMsg::TrackEnded {
+                        generation: track_gen,
+                    });
                 }
             }
         });
@@ -1775,5 +1824,44 @@ mod tests {
         assert_eq!(RepeatMode::Off.next(), RepeatMode::Context);
         assert_eq!(RepeatMode::Context.next(), RepeatMode::Track);
         assert_eq!(RepeatMode::Track.next(), RepeatMode::Off);
+    }
+
+    #[test]
+    fn resolve_context_uris_supports_single_tracks_explore_and_artists() {
+        let dir = std::env::temp_dir().join(format!("resonix-player-ctx-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let db = SearchCache::new(&dir).unwrap();
+        let sample = YtTrack {
+            id: "dQw4w9WgXcQ".into(),
+            title: "Never Gonna Give You Up".into(),
+            artist: "Rick Astley".into(),
+            thumbnail: String::new(),
+            duration_secs: 213.0,
+            stream_url: None,
+        };
+        db.upsert_tracks(std::slice::from_ref(&sample)).unwrap();
+
+        let mut explore_map = HashMap::new();
+        explore_map.insert("explore_0".to_string(), vec![sample.clone()]);
+        let explore_cache = Mutex::new(explore_map);
+
+        assert_eq!(
+            resolve_context_uris(&db, &explore_cache, "spotify:track:dQw4w9WgXcQ"),
+            vec!["spotify:track:dQw4w9WgXcQ".to_string()]
+        );
+        assert_eq!(
+            resolve_context_uris(&db, &explore_cache, "spotify:playlist:explore_0"),
+            vec!["spotify:track:dQw4w9WgXcQ".to_string()]
+        );
+        let artist_uri = format!("spotify:artist:{}", encode_artist_id("Rick Astley"));
+        assert_eq!(
+            resolve_context_uris(&db, &explore_cache, &artist_uri),
+            vec!["spotify:track:dQw4w9WgXcQ".to_string()]
+        );
+        assert_eq!(
+            resolve_context_uris(&db, &explore_cache, "spotify:album:yt_dQw4w9WgXcQ"),
+            vec!["spotify:track:dQw4w9WgXcQ".to_string()]
+        );
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }

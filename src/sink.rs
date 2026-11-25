@@ -1457,8 +1457,7 @@ mod tests {
             assert!(sink.start().is_ok());
             assert_eq!(reported.lock().unwrap().len(), attempt - 1);
 
-            let Err(SinkError::ConnectionRefused(message)) = sink.write(packet())
-            else {
+            let Err(SinkError::ConnectionRefused(message)) = sink.write(packet()) else {
                 panic!("the first packet must report the missing output");
             };
             assert_eq!(message, NO_DEVICE);
@@ -1536,8 +1535,11 @@ mod tests {
         let frames = SAMPLE_RATE as usize / 100;
         let started = Instant::now();
         for _ in 0..4 {
-            sink.write(AudioPacket::Samples(vec![0.0; frames * NUM_CHANNELS as usize]))
-                .unwrap();
+            sink.write(AudioPacket::Samples(vec![
+                0.0;
+                frames * NUM_CHANNELS as usize
+            ]))
+            .unwrap();
         }
         assert!(
             started.elapsed() >= Duration::from_millis(40),

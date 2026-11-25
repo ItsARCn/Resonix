@@ -13,11 +13,10 @@
 use std::collections::HashMap;
 use std::time::Duration;
 
-use aes::cipher::{BlockEncrypt, KeyInit, KeyIvInit, StreamCipher};
+use aes::cipher::{BlockEncrypt, KeyInit};
 use anyhow::{Context, Result, anyhow, bail};
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD as BASE64;
-use hmac::{Hmac, Mac};
 use serde::Deserialize;
 use sha1::{Digest, Sha1};
 
@@ -53,9 +52,6 @@ impl ReceiverUpdates {
             .take()
     }
 }
-
-type HmacSha1 = Hmac<Sha1>;
-type Aes128Ctr = ctr::Ctr128BE<aes::Aes128>;
 
 /// A receiver found on the network.
 #[derive(Clone, Debug, PartialEq, Eq)]

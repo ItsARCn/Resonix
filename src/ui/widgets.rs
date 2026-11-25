@@ -1250,6 +1250,16 @@ fn item_menu_at(
         if menu_item(ui, &palette, Some(icon), &text) {
             app.actions.push(Action::ToggleSaved(uri.clone()));
         }
+        if let PlayableItem::Track(track) = item
+            && menu_item(
+                ui,
+                &palette,
+                Some(Icon::Download),
+                &gettext(locale, "Download"),
+            )
+        {
+            app.actions.push(Action::DownloadTrack(track.clone()));
+        }
         add_to_playlist_menu(ui, app, std::slice::from_ref(item));
     } else if menu_item(
         ui,

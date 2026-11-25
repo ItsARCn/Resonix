@@ -6,6 +6,8 @@ pub mod artist;
 pub mod collection;
 pub(crate) mod devices;
 mod dialogs;
+pub mod downloads;
+pub mod explore;
 pub(crate) mod friends;
 pub mod home;
 mod keys;
@@ -14,6 +16,7 @@ pub mod login;
 mod lyrics;
 pub mod new_releases;
 pub mod player_bar;
+pub mod playlists;
 mod prerelease;
 pub mod queue;
 pub mod radio;
@@ -311,7 +314,13 @@ fn central(app: &mut App, ui: &mut egui::Ui) {
             let page = app.page().clone();
             let overview = matches!(
                 page,
-                Page::Home | Page::Search | Page::Settings | Page::Queue
+                Page::Home
+                    | Page::Explore
+                    | Page::Search
+                    | Page::Playlists
+                    | Page::Downloads
+                    | Page::Settings
+                    | Page::Queue
             );
             // The wash belongs to the page's hero, so it scrolls away with
             // it. The page's offset is known once it has been laid out, so
@@ -364,10 +373,13 @@ fn central(app: &mut App, ui: &mut egui::Ui) {
                         ui.set_min_width(ui.available_width());
                         match page {
                             Page::Home => home::show(app, ui),
+                            Page::Explore => explore::show(app, ui),
                             Page::TopSongs => collection::top_songs(app, ui),
                             Page::NewReleases => new_releases::page(app, ui),
                             Page::Search => search::show(app, ui),
                             Page::LikedSongs => collection::liked(app, ui),
+                            Page::Playlists => playlists::show(app, ui),
+                            Page::Downloads => downloads::show(app, ui),
                             Page::Albums | Page::Artists | Page::Podcasts | Page::Episodes => {
                                 library::show(app, ui, page)
                             }

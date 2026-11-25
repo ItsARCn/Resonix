@@ -752,8 +752,7 @@ impl SearchCache {
             .conn
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
-        let count: i64 =
-            conn.query_row("SELECT COUNT(*) FROM listen_history", [], |r| r.get(0))?;
+        let count: i64 = conn.query_row("SELECT COUNT(*) FROM listen_history", [], |r| r.get(0))?;
         Ok(count)
     }
 
@@ -800,6 +799,37 @@ impl SearchCache {
             )
             .unwrap_or(false);
         Ok(exists)
+    }
+
+    /// Lists downloaded tracks joined with `tracks` metadata, newest first.
+    pub fn list_downloads(&self) -> Result<Vec<(YtTrack, String, u64)>, AppError> {
+        let conn = self
+            .conn
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let mut stmt = conn.prepare_cached(
+            "SELECT t.id, t.title, t.artist, t.thumbnail, t.duration, d.path, d.size
+             FROM downloads d
+             JOIN tracks t ON t.id = d.track_id
+             ORDER BY d.downloaded DESC",
+        )?;
+        let rows = stmt
+            .query_map([], |row| {
+                let track = YtTrack {
+                    id: row.get(0)?,
+                    title: row.get(1)?,
+                    artist: row.get(2)?,
+                    thumbnail: row.get(3)?,
+                    duration_secs: row.get(4)?,
+                    stream_url: None,
+                };
+                let path: String = row.get(5)?;
+                let size: i64 = row.get(6)?;
+                Ok((track, path, u64::try_from(size).unwrap_or(0)))
+            })?
+            .filter_map(|r| r.ok())
+            .collect();
+        Ok(rows)
     }
 
     pub fn get_lyrics(&self, track_id: &str) -> Result<Option<CachedLyrics>, AppError> {

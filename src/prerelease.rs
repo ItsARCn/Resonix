@@ -12,7 +12,10 @@ impl<'a> WireReader<'a> {
         let mut val = 0u64;
         let mut shift = 0u32;
         loop {
-            let (&b, rest) = self.0.split_first().context("unexpected EOF reading varint")?;
+            let (&b, rest) = self
+                .0
+                .split_first()
+                .context("unexpected EOF reading varint")?;
             self.0 = rest;
             val |= u64::from(b & 0x7f) << shift;
             if b & 0x80 == 0 {

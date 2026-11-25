@@ -179,7 +179,10 @@ async fn run_ytdlp(
         }
     }
 
-    let status = child.wait().await.map_err(|e| format!("yt-dlp wait: {e}"))?;
+    let status = child
+        .wait()
+        .await
+        .map_err(|e| format!("yt-dlp wait: {e}"))?;
     if status.success() && expected_path.exists() {
         return Ok(expected_path);
     }

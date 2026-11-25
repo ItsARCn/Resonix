@@ -177,7 +177,9 @@ fn parse_youtube(text: &str) -> Option<String> {
     let (host, path_and_query) = rest.split_once('/')?;
     let host_lc = host.to_ascii_lowercase();
     if host_lc == "youtu.be" {
-        let end = path_and_query.find(['?', '#']).unwrap_or(path_and_query.len());
+        let end = path_and_query
+            .find(['?', '#'])
+            .unwrap_or(path_and_query.len());
         let vid = path_and_query[..end].trim_matches('/');
         if !vid.is_empty() && !vid.contains('/') {
             return Some(format!("spotify:track:{vid}"));

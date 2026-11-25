@@ -260,10 +260,7 @@ fn _unsupported() -> crate::api::client::ApiError {
 }
 
 impl Controller {
-    pub async fn transfer(
-        &self,
-        _to: &str,
-    ) -> Result<(), crate::api::client::ApiError> {
+    pub async fn transfer(&self, _to: &str) -> Result<(), crate::api::client::ApiError> {
         Err(_unsupported())
     }
 
@@ -273,6 +270,25 @@ impl Controller {
         _uris: &[String],
     ) -> (usize, Result<(), crate::api::client::ApiError>) {
         (0, Err(_unsupported()))
+    }
+
+    #[cfg_attr(not(test), allow(dead_code))]
+    async fn append_many<F, Fut>(
+        &self,
+        uris: &[String],
+        mut append: F,
+    ) -> (usize, Result<(), crate::api::client::ApiError>)
+    where
+        F: FnMut(String) -> Fut,
+        Fut: std::future::Future<Output = Result<(), crate::api::client::ApiError>>,
+    {
+        let _write = self.queue_writes.lock().await;
+        for (added, uri) in uris.iter().enumerate() {
+            if let Err(error) = append(uri.clone()).await {
+                return (added, Err(error));
+            }
+        }
+        (uris.len(), Ok(()))
     }
 }
 

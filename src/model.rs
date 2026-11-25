@@ -109,11 +109,14 @@ fn episode_retained_bytes(episode: &Episode) -> usize {
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Page {
     Home,
+    Explore,
     TopSongs,
     /// The songs of the latest releases from followed artists.
     NewReleases,
     Search,
     LikedSongs,
+    Playlists,
+    Downloads,
     Albums,
     Artists,
     Podcasts,
@@ -133,10 +136,13 @@ impl Page {
     pub fn encode(&self) -> String {
         match self {
             Page::Home => "home".into(),
+            Page::Explore => "explore".into(),
             Page::TopSongs => "top-songs".into(),
             Page::NewReleases => "new-releases".into(),
             Page::Search => "search".into(),
             Page::LikedSongs => "liked".into(),
+            Page::Playlists => "playlists".into(),
+            Page::Downloads => "downloads".into(),
             Page::Albums => "albums".into(),
             Page::Artists => "artists".into(),
             Page::Podcasts => "podcasts".into(),
@@ -154,10 +160,13 @@ impl Page {
     pub fn decode(text: &str) -> Option<Self> {
         Some(match text {
             "home" => Page::Home,
+            "explore" => Page::Explore,
             "top-songs" => Page::TopSongs,
             "new-releases" => Page::NewReleases,
             "search" => Page::Search,
             "liked" => Page::LikedSongs,
+            "playlists" => Page::Playlists,
+            "downloads" => Page::Downloads,
             "albums" => Page::Albums,
             "artists" => Page::Artists,
             "podcasts" => Page::Podcasts,
@@ -1125,6 +1134,13 @@ pub struct Toast {
 
 /// Actions emitted while drawing and applied afterward to avoid borrow conflicts.
 #[derive(Clone, Debug)]
+pub struct DownloadedTrack {
+    pub track: crate::api::models::Track,
+    pub path: String,
+    pub size_bytes: u64,
+}
+
+#[derive(Clone, Debug)]
 pub enum Action {
     Open(Page),
     /// Opens the radio of a song shown in a list, after caching the row's
@@ -1507,6 +1523,10 @@ pub enum Action {
     /// Fetch one of projectM's preset packs into the folder, by its place
     /// in the list.
     DownloadMilkdropPack(usize),
+    DownloadTrack(crate::api::models::Track),
+    DeleteDownload(String),
+    RefreshExplore,
+    RefreshDownloads,
     Quit,
 }
 

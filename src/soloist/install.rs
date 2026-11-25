@@ -26,7 +26,7 @@ pub fn artifact(os: &str, arch: &str) -> Option<&'static str> {
 }
 
 pub fn supported() -> bool {
-    artifact(std::env::consts::OS, std::env::consts::ARCH).is_some()
+    false
 }
 
 pub fn now() -> u64 {

@@ -272,7 +272,8 @@ impl Bridge {
 
     #[cfg(target_os = "linux")]
     async fn start(&self) -> bool {
-        self.state.fail("PipeWire Soloist bridge is disabled in Resonix");
+        self.state
+            .fail("PipeWire Soloist bridge is disabled in Resonix");
         false
     }
 

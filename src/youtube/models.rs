@@ -2,8 +2,7 @@ use base64::Engine as _;
 use serde::{Deserialize, Serialize};
 
 use crate::api::models::{
-    Album, Artist, ArtistRef, Image, Owner, PlayableItem, Playlist, PlaylistItem, Track,
-    TrackCount,
+    Album, Artist, ArtistRef, Image, Owner, PlayableItem, Playlist, PlaylistItem, Track, TrackCount,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -157,4 +156,16 @@ pub fn artist_from_name(name: &str, thumbnail: Option<&str>) -> Artist {
         images: thumbnail.map(thumbnail_images).unwrap_or_default(),
         ..Artist::default()
     }
+}
+
+pub fn to_spotify_track(track: &YtTrack) -> Track {
+    track.to_spotify_track()
+}
+
+pub fn to_playlist_item(track: &YtTrack) -> PlaylistItem {
+    track.to_playlist_item()
+}
+
+pub fn to_spotify_playlist(playlist: &YtPlaylist) -> Playlist {
+    playlist.to_spotify_playlist()
 }

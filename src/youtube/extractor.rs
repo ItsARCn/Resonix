@@ -1,11 +1,25 @@
 use std::path::PathBuf;
 use std::process::Stdio;
+use std::time::Duration;
 
 use tokio::process::Command;
 
 use super::error::AppError;
 use super::models::YtTrack;
 use super::process::NoWindow;
+
+const YTDLP_QUERY_TIMEOUT: Duration = Duration::from_secs(15);
+const YTDLP_PLAYLIST_TIMEOUT: Duration = Duration::from_secs(30);
+
+async fn run_ytdlp_with_timeout(
+    mut cmd: Command,
+    timeout: Duration,
+) -> Result<std::process::Output, AppError> {
+    tokio::time::timeout(timeout, cmd.output())
+        .await
+        .map_err(|_| AppError::Extraction("yt-dlp timed out".into()))?
+        .map_err(|e| AppError::Extraction(format!("failed to run yt-dlp: {e}")))
+}
 
 pub struct Extractor {
     /// App-managed yt-dlp location. Resolution happens per spawn so a
@@ -26,8 +40,8 @@ impl Extractor {
 
     /// Search YouTube Music specifically for tracks.
     pub async fn search(&self, query: &str, limit: usize) -> Result<Vec<YtTrack>, AppError> {
-        let output = Command::new(self.bin())
-            .no_window()
+        let mut cmd = Command::new(self.bin());
+        cmd.no_window()
             .args([
                 &format!("https://music.youtube.com/search?q={}", encode_query(query)),
                 "--dump-json",
@@ -39,10 +53,8 @@ impl Extractor {
             ])
             .args(super::cookies::current_args())
             .stdout(Stdio::piped())
-            .stderr(Stdio::null())
-            .output()
-            .await
-            .map_err(|e| AppError::Extraction(format!("failed to run yt-dlp: {e}")))?;
+            .stderr(Stdio::null());
+        let output = run_ytdlp_with_timeout(cmd, YTDLP_QUERY_TIMEOUT).await?;
 
         if !output.status.success() {
             return Err(AppError::Extraction("yt-dlp search failed".into()));
@@ -58,8 +70,11 @@ impl Extractor {
         query: &str,
         limit: usize,
     ) -> Result<Vec<YtTrack>, AppError> {
-        let output = Command::new(self.bin())
-            .no_window()
+        if query.trim().is_empty() {
+            return Ok(Vec::new());
+        }
+        let mut cmd = Command::new(self.bin());
+        cmd.no_window()
             .args([
                 &format!("ytsearch{limit}:{query}"),
                 "--dump-json",
@@ -69,10 +84,8 @@ impl Extractor {
             ])
             .args(super::cookies::current_args())
             .stdout(Stdio::piped())
-            .stderr(Stdio::null())
-            .output()
-            .await
-            .map_err(|e| AppError::Extraction(format!("failed to run yt-dlp: {e}")))?;
+            .stderr(Stdio::null());
+        let output = run_ytdlp_with_timeout(cmd, YTDLP_QUERY_TIMEOUT).await?;
 
         if !output.status.success() {
             return Err(AppError::Extraction("yt-dlp search failed".into()));
@@ -84,8 +97,8 @@ impl Extractor {
 
     /// Fetch metadata for a single video/track.
     pub async fn metadata(&self, video_id: &str) -> Result<YtTrack, AppError> {
-        let output = Command::new(self.bin())
-            .no_window()
+        let mut cmd = Command::new(self.bin());
+        cmd.no_window()
             .args([
                 &format!("https://www.youtube.com/watch?v={video_id}"),
                 "-j",
@@ -94,10 +107,8 @@ impl Extractor {
             ])
             .args(super::cookies::current_args())
             .stdout(Stdio::piped())
-            .stderr(Stdio::null())
-            .output()
-            .await
-            .map_err(|e| AppError::Extraction(format!("yt-dlp metadata failed: {e}")))?;
+            .stderr(Stdio::null());
+        let output = run_ytdlp_with_timeout(cmd, YTDLP_QUERY_TIMEOUT).await?;
 
         let v: serde_json::Value = serde_json::from_slice(&output.stdout)
             .map_err(|e| AppError::Extraction(e.to_string()))?;
@@ -107,7 +118,8 @@ impl Extractor {
             title: v["title"].as_str().unwrap_or("Unknown").to_string(),
             artist: v["channel"]
                 .as_str()
-                .or_else(|| v["uploader"].as_str())
+                .filter(|s| !s.trim().is_empty())
+                .or_else(|| v["uploader"].as_str().filter(|s| !s.trim().is_empty()))
                 .unwrap_or("Unknown")
                 .to_string(),
             thumbnail: best_thumbnail(&v),
@@ -178,8 +190,8 @@ impl Extractor {
         &self,
         url: &str,
     ) -> Result<(String, Option<String>, Vec<YtTrack>), AppError> {
-        let output = Command::new(self.bin())
-            .no_window()
+        let mut cmd = Command::new(self.bin());
+        cmd.no_window()
             .args([
                 url,
                 "--dump-json",
@@ -189,10 +201,8 @@ impl Extractor {
             ])
             .args(super::cookies::current_args())
             .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .output()
-            .await
-            .map_err(|e| AppError::Extraction(format!("failed to run yt-dlp: {e}")))?;
+            .stderr(Stdio::piped());
+        let output = run_ytdlp_with_timeout(cmd, YTDLP_PLAYLIST_TIMEOUT).await?;
 
         let stdout = String::from_utf8_lossy(&output.stdout);
         let mut tracks = Vec::new();
@@ -241,14 +251,23 @@ fn parse_flat_tracks(stdout: &str) -> Vec<YtTrack> {
             if !is_playable_video(&v) {
                 return None;
             }
+            let title = v["title"].as_str().unwrap_or("Unknown").to_string();
+            let raw_artist = v["channel"]
+                .as_str()
+                .filter(|s| !s.trim().is_empty())
+                .or_else(|| v["uploader"].as_str().filter(|s| !s.trim().is_empty()))
+                .or_else(|| {
+                    v["playlist_uploader"]
+                        .as_str()
+                        .filter(|s| !s.trim().is_empty())
+                });
+            let artist = raw_artist
+                .map(str::to_string)
+                .unwrap_or_else(|| "Unknown".to_string());
             Some(YtTrack {
                 id: v["id"].as_str()?.to_string(),
-                title: v["title"].as_str().unwrap_or("Unknown").to_string(),
-                artist: v["channel"]
-                    .as_str()
-                    .or_else(|| v["uploader"].as_str())
-                    .unwrap_or("Unknown")
-                    .to_string(),
+                title,
+                artist,
                 thumbnail: best_thumbnail(&v),
                 duration_secs: v["duration"].as_f64().unwrap_or(0.0),
                 stream_url: None,
