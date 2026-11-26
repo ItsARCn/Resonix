@@ -175,6 +175,7 @@ pub fn page(app: &mut App, ui: &mut egui::Ui) {
             .clicked()
         {
             app.actions.push(Action::DownloadUris {
+                collection_uri: Some("spotify:new-releases".into()),
                 label: gettext(locale, "New releases").into_owned(),
                 uris: uris.to_vec(),
             });

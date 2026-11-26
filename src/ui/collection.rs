@@ -498,6 +498,7 @@ pub fn actions_row(
                     && let Some(uris) = &actions.view
                 {
                     app.actions.push(Action::DownloadUris {
+                        collection_uri: actions.play_uri.clone(),
                         label: actions.name.to_string(),
                         uris: uris.to_vec(),
                     });
@@ -1950,6 +1951,7 @@ pub fn top_songs(app: &mut App, ui: &mut egui::Ui) {
             .clicked()
         {
             app.actions.push(Action::DownloadUris {
+                collection_uri: Some("spotify:top-songs".into()),
                 label: top_title.to_string(),
                 uris: uris.to_vec(),
             });
@@ -5806,8 +5808,10 @@ mod tests {
         assert!(
             matches!(
                 actions.as_slice(),
-                [Action::DownloadUris { label, uris }]
-                    if label == "Test" && uris.as_slice() == ["spotify:track:1", "spotify:track:2"]
+                [Action::DownloadUris { collection_uri, label, uris }]
+                    if collection_uri.as_deref() == Some("spotify:playlist:test")
+                        && label == "Test"
+                        && uris.as_slice() == ["spotify:track:1", "spotify:track:2"]
             ),
             "expected DownloadUris when filtered, got {actions:?}"
         );

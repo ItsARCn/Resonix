@@ -114,7 +114,7 @@ pub enum Page {
     NewReleases,
     Search,
     LikedSongs,
-    Playlists,
+    Library,
     Downloads,
     Albums,
     Artists,
@@ -139,7 +139,7 @@ impl Page {
             Page::NewReleases => "new-releases".into(),
             Page::Search => "search".into(),
             Page::LikedSongs => "liked".into(),
-            Page::Playlists => "playlists".into(),
+            Page::Library => "library".into(),
             Page::Downloads => "downloads".into(),
             Page::Albums => "albums".into(),
             Page::Artists => "artists".into(),
@@ -162,7 +162,7 @@ impl Page {
             "new-releases" => Page::NewReleases,
             "search" => Page::Search,
             "liked" => Page::LikedSongs,
-            "playlists" => Page::Playlists,
+            "library" | "playlists" => Page::Library,
             "downloads" => Page::Downloads,
             "albums" => Page::Albums,
             "artists" => Page::Artists,
@@ -1138,6 +1138,23 @@ pub struct DownloadedTrack {
 }
 
 #[derive(Clone, Debug)]
+pub struct DownloadedCollection {
+    pub uri: String,
+    pub label: String,
+    pub thumbnail: Option<String>,
+    pub total_tracks: usize,
+    pub tracks: Vec<DownloadedTrack>,
+    pub total_bytes: u64,
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct DownloadsLibrary {
+    pub collections: Vec<DownloadedCollection>,
+    pub tracks: Vec<DownloadedTrack>,
+    pub all_track_ids: Vec<String>,
+}
+
+#[derive(Clone, Debug)]
 pub enum Action {
     Open(Page),
     /// Opens the radio of a song shown in a list, after caching the row's
@@ -1522,6 +1539,7 @@ pub enum Action {
     DownloadMilkdropPack(usize),
     DownloadTrack(crate::api::models::Track),
     DownloadUris {
+        collection_uri: Option<String>,
         label: String,
         uris: Vec<String>,
     },
@@ -1530,6 +1548,7 @@ pub enum Action {
         label: String,
     },
     DeleteDownload(String),
+    DeleteDownloadCollection(String),
     RefreshDownloads,
     Quit,
 }

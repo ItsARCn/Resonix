@@ -926,7 +926,7 @@ pub struct App {
     /// The window's pixels per point when it last drew, so artwork chosen
     /// away from the drawing code fits the display it lands on.
     pub pixels_per_point: f32,
-    pub downloads: Loadable<Vec<crate::model::DownloadedTrack>>,
+    pub downloads: Loadable<crate::model::DownloadsLibrary>,
     pub downloaded_ids: HashSet<String>,
     pub downloading_ids: HashSet<String>,
 }
@@ -3638,9 +3638,12 @@ impl App {
                     self.load_home(true);
                 }
             }
-            Page::Playlists => {
+            Page::Library => {
                 if self.library.playlists.needs_load() {
                     self.load_playlists();
+                }
+                if !self.liked_songs.cache_checked {
+                    self.ensure_liked_songs();
                 }
             }
             Page::Downloads => {
@@ -6452,9 +6455,12 @@ impl App {
                     self.load_home(self.home.refresh_failed);
                 }
             }
-            Page::Playlists => {
+            Page::Library => {
                 if self.network_reachable && self.library.playlists.needs_load() {
                     self.load_playlists();
+                }
+                if !self.liked_songs.cache_checked {
+                    self.ensure_liked_songs();
                 }
             }
             Page::Downloads => {
@@ -7246,7 +7252,7 @@ impl App {
     fn reload(&mut self, page: Page) {
         match &page {
             Page::Home => self.load_home(true),
-            Page::Playlists => self.load_playlists(),
+            Page::Library => self.load_playlists(),
             Page::Downloads => {
                 self.downloads = Loadable::Loading;
                 self.backend.api(ApiRequest::Downloads);
@@ -8713,8 +8719,8 @@ impl App {
                 }
             }
             ApiResponse::Downloads(result) => {
-                if let Ok(list) = &result {
-                    self.sync_downloaded_ids(list);
+                if let Ok(lib) = &result {
+                    self.sync_downloaded_ids(&lib.all_track_ids);
                 }
                 self.downloads = Loadable::from_result(result);
             }
@@ -10298,16 +10304,11 @@ impl App {
         uris.iter().any(|uri| self.is_uri_downloading(uri))
     }
 
-    fn sync_downloaded_ids(&mut self, list: &[crate::model::DownloadedTrack]) {
+    fn sync_downloaded_ids(&mut self, ids: &[String]) {
         self.downloaded_ids.clear();
-        for item in list {
-            if let Some(id) = item
-                .track
-                .id
-                .as_deref()
-                .or_else(|| item.track.uri.strip_prefix("spotify:track:"))
-            {
-                self.downloaded_ids.insert(id.to_string());
+        for id in ids {
+            if !id.is_empty() {
+                self.downloaded_ids.insert(id.clone());
             }
         }
     }
@@ -14406,37 +14407,51 @@ impl App {
                 self.backend.send(Command::DownloadTrack(track));
                 self.toast(gettext(self.locale, "Downloading {name}").replace("{name}", &name));
             }
-            Action::DownloadUris { label, uris } => {
-                let mut tracks = Vec::new();
-                let mut missing_uris = Vec::new();
+            Action::DownloadUris {
+                collection_uri,
+                label,
+                uris,
+            } => {
+                let mut unique_uris = Vec::new();
+                let mut resolved_tracks = Vec::new();
                 let mut seen = HashSet::new();
+                let mut all_downloaded = true;
                 for uri in uris {
                     if !uri.starts_with("spotify:track:") || !seen.insert(uri.clone()) {
                         continue;
                     }
-                    if self.is_uri_downloaded(&uri) || self.is_uri_downloading(&uri) {
-                        continue;
-                    }
-                    if let Some(id) = uri.strip_prefix("spotify:track:") {
-                        self.downloading_ids.insert(id.to_string());
+                    if !self.is_uri_downloaded(&uri) {
+                        all_downloaded = false;
+                        if let Some(id) = uri.strip_prefix("spotify:track:")
+                            && !self.is_uri_downloading(&uri)
+                        {
+                            self.downloading_ids.insert(id.to_string());
+                        }
                     }
                     if let Some(track) = self.resolve_track_for_uri(&uri) {
-                        tracks.push(track);
-                    } else {
-                        missing_uris.push(uri);
+                        resolved_tracks.push(track);
                     }
+                    unique_uris.push(uri);
                 }
-                if tracks.is_empty() && missing_uris.is_empty() {
+                if unique_uris.is_empty() {
+                    return;
+                }
+                let had_pending = !all_downloaded;
+                if all_downloaded && collection_uri.is_none() {
                     self.toast(gettext(self.locale, "Downloaded"));
                     return;
                 }
-                if !tracks.is_empty() {
-                    self.backend.send(Command::DownloadTracks(tracks));
-                }
-                if !missing_uris.is_empty() {
-                    self.backend.send(Command::DownloadUris(missing_uris));
-                }
-                self.toast(gettext(self.locale, "Downloading {name}").replace("{name}", &label));
+                self.backend.send(Command::DownloadUris {
+                    collection_uri,
+                    label: label.clone(),
+                    resolved_tracks,
+                    uris: unique_uris,
+                });
+                self.toast(if had_pending {
+                    gettext(self.locale, "Downloading {name}").replace("{name}", &label)
+                } else {
+                    gettext(self.locale, "Downloaded").into_owned()
+                });
             }
             Action::DownloadContext { uri, label } => {
                 if let Some(id) = uri.strip_prefix("spotify:playlist:")
@@ -14497,17 +14512,36 @@ impl App {
                 self.toast(gettext(self.locale, "Downloading {name}").replace("{name}", &label));
             }
             Action::DeleteDownload(id) => {
-                self.downloaded_ids.remove(&id);
-                if let Loadable::Loaded(list) = &mut self.downloads {
-                    list.retain(|d| {
+                if let Loadable::Loaded(lib) = &mut self.downloads {
+                    lib.tracks.retain(|d| {
                         d.track
                             .id
                             .as_deref()
                             .or_else(|| d.track.uri.strip_prefix("spotify:track:"))
                             != Some(id.as_str())
                     });
+                    let still_in_collection = lib.collections.iter().any(|c| {
+                        c.tracks.iter().any(|d| {
+                            d.track
+                                .id
+                                .as_deref()
+                                .or_else(|| d.track.uri.strip_prefix("spotify:track:"))
+                                == Some(id.as_str())
+                        })
+                    });
+                    if !still_in_collection {
+                        self.downloaded_ids.remove(&id);
+                    }
+                } else {
+                    self.downloaded_ids.remove(&id);
                 }
                 self.backend.send(Command::DeleteDownload(id));
+            }
+            Action::DeleteDownloadCollection(uri) => {
+                if let Loadable::Loaded(lib) = &mut self.downloads {
+                    lib.collections.retain(|c| c.uri != uri);
+                }
+                self.backend.send(Command::DeleteDownloadCollection(uri));
             }
             Action::RefreshDownloads => {
                 self.downloads = Loadable::Loading;

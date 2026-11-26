@@ -7,6 +7,15 @@ use rusqlite::{Connection, params};
 use super::error::AppError;
 use super::models::{YtPlaylist, YtTrack};
 
+#[derive(Clone, Debug)]
+pub struct DbDownloadCollection {
+    pub uri: String,
+    pub label: String,
+    pub thumbnail: String,
+    pub total_tracks: usize,
+    pub tracks: Vec<(YtTrack, String, u64)>,
+}
+
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub struct CachedLyrics {
     pub content: String,
@@ -106,10 +115,29 @@ impl SearchCache {
                  track_id   TEXT PRIMARY KEY REFERENCES tracks(id) ON DELETE CASCADE,
                  path       TEXT NOT NULL,
                  size       INTEGER NOT NULL DEFAULT 0,
+                 standalone INTEGER NOT NULL DEFAULT 1,
                  downloaded TEXT NOT NULL DEFAULT (datetime('now'))
              );
-             CREATE INDEX IF NOT EXISTS idx_downloads_time ON downloads(downloaded DESC);",
+             CREATE INDEX IF NOT EXISTS idx_downloads_time ON downloads(downloaded DESC);
+
+             CREATE TABLE IF NOT EXISTS download_collections (
+                 uri       TEXT PRIMARY KEY,
+                 label     TEXT NOT NULL,
+                 thumbnail TEXT NOT NULL DEFAULT '',
+                 updated   TEXT NOT NULL DEFAULT (datetime('now'))
+             );
+
+             CREATE TABLE IF NOT EXISTS download_collection_tracks (
+                 collection_uri TEXT NOT NULL REFERENCES download_collections(uri) ON DELETE CASCADE,
+                 track_id       TEXT NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
+                 position       INTEGER NOT NULL DEFAULT 0,
+                 PRIMARY KEY (collection_uri, track_id)
+             );",
         )?;
+        let _ = conn.execute(
+            "ALTER TABLE downloads ADD COLUMN standalone INTEGER NOT NULL DEFAULT 1",
+            [],
+        );
 
         Ok(Self {
             conn: Mutex::new(conn),
@@ -759,18 +787,68 @@ impl SearchCache {
     // ---- Downloads & Lyrics Cache ------------------------------------------
 
     pub fn mark_downloaded(&self, track_id: &str, path: &str, size: u64) -> Result<(), AppError> {
+        self.mark_downloaded_with_mode(track_id, path, size, true)
+    }
+
+    pub fn mark_downloaded_with_mode(
+        &self,
+        track_id: &str,
+        path: &str,
+        size: u64,
+        standalone: bool,
+    ) -> Result<(), AppError> {
         let conn = self
             .conn
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let flag = i64::from(standalone);
         conn.execute(
-            "INSERT INTO downloads (track_id, path, size) VALUES (?1, ?2, ?3)
+            "INSERT INTO downloads (track_id, path, size, standalone) VALUES (?1, ?2, ?3, ?4)
              ON CONFLICT(track_id) DO UPDATE SET
                  path = excluded.path,
                  size = excluded.size,
+                 standalone = MAX(downloads.standalone, excluded.standalone),
                  downloaded = datetime('now')",
-            params![track_id, path, size as i64],
+            params![track_id, path, size as i64, flag],
         )?;
+        Ok(())
+    }
+
+    pub fn record_download_collection(
+        &self,
+        uri: &str,
+        label: &str,
+        thumbnail: &str,
+        tracks: &[YtTrack],
+    ) -> Result<(), AppError> {
+        self.upsert_tracks(tracks)?;
+        let conn = self
+            .conn
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let tx = conn.unchecked_transaction()?;
+        tx.execute(
+            "INSERT INTO download_collections (uri, label, thumbnail, updated)
+             VALUES (?1, ?2, ?3, datetime('now'))
+             ON CONFLICT(uri) DO UPDATE SET
+                 label = excluded.label,
+                 thumbnail = CASE WHEN excluded.thumbnail != '' THEN excluded.thumbnail ELSE download_collections.thumbnail END,
+                 updated = datetime('now')",
+            params![uri, label, thumbnail],
+        )?;
+        tx.execute(
+            "DELETE FROM download_collection_tracks WHERE collection_uri = ?1",
+            params![uri],
+        )?;
+        let mut insert_track = tx.prepare_cached(
+            "INSERT OR IGNORE INTO download_collection_tracks (collection_uri, track_id, position)
+             VALUES (?1, ?2, ?3)",
+        )?;
+        for (idx, track) in tracks.iter().enumerate() {
+            insert_track.execute(params![uri, track.id, idx as i64])?;
+        }
+        drop(insert_track);
+        tx.commit()?;
         Ok(())
     }
 
@@ -784,6 +862,85 @@ impl SearchCache {
             params![track_id],
         )?;
         Ok(())
+    }
+
+    /// Removes a standalone download entry. If the track still belongs to a
+    /// downloaded collection, clears its `standalone` flag and keeps the file.
+    pub fn remove_standalone_download(&self, track_id: &str) -> Result<Option<String>, AppError> {
+        let conn = self
+            .conn
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let in_collection: bool = conn
+            .query_row(
+                "SELECT 1 FROM download_collection_tracks WHERE track_id = ?1 LIMIT 1",
+                params![track_id],
+                |_| Ok(true),
+            )
+            .unwrap_or(false);
+        if in_collection {
+            conn.execute(
+                "UPDATE downloads SET standalone = 0 WHERE track_id = ?1",
+                params![track_id],
+            )?;
+            return Ok(None);
+        }
+        let path: Option<String> = conn
+            .query_row(
+                "SELECT path FROM downloads WHERE track_id = ?1",
+                params![track_id],
+                |r| r.get(0),
+            )
+            .ok();
+        conn.execute(
+            "DELETE FROM downloads WHERE track_id = ?1",
+            params![track_id],
+        )?;
+        Ok(path)
+    }
+
+    /// Removes a downloaded collection and any downloaded tracks that are no
+    /// longer referenced as standalone downloads or by another collection,
+    /// returning the file paths that can be deleted from disk.
+    pub fn delete_download_collection(
+        &self,
+        collection_uri: &str,
+    ) -> Result<Vec<String>, AppError> {
+        let conn = self
+            .conn
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let tx = conn.unchecked_transaction()?;
+        tx.execute(
+            "DELETE FROM download_collections WHERE uri = ?1",
+            params![collection_uri],
+        )?;
+        let orphan_paths: Vec<String> = {
+            let mut stmt = tx.prepare(
+                "SELECT d.track_id, d.path
+                 FROM downloads d
+                 WHERE d.standalone = 0
+                   AND NOT EXISTS (
+                       SELECT 1 FROM download_collection_tracks ct WHERE ct.track_id = d.track_id
+                   )",
+            )?;
+            stmt.query_map([], |row| {
+                Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+            })?
+            .filter_map(|r| r.ok())
+            .map(|(_, p)| p)
+            .collect()
+        };
+        tx.execute(
+            "DELETE FROM downloads
+             WHERE standalone = 0
+               AND NOT EXISTS (
+                   SELECT 1 FROM download_collection_tracks ct WHERE ct.track_id = downloads.track_id
+               )",
+            [],
+        )?;
+        tx.commit()?;
+        Ok(orphan_paths)
     }
 
     pub fn is_downloaded(&self, track_id: &str) -> Result<bool, AppError> {
@@ -830,6 +987,104 @@ impl SearchCache {
             .filter_map(|r| r.ok())
             .collect();
         Ok(rows)
+    }
+
+    pub fn list_standalone_downloads(&self) -> Result<Vec<(YtTrack, String, u64)>, AppError> {
+        let conn = self
+            .conn
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let mut stmt = conn.prepare_cached(
+            "SELECT t.id, t.title, t.artist, t.thumbnail, t.duration, d.path, d.size
+             FROM downloads d
+             JOIN tracks t ON t.id = d.track_id
+             WHERE d.standalone != 0
+             ORDER BY d.downloaded DESC",
+        )?;
+        let rows = stmt
+            .query_map([], |row| {
+                let track = YtTrack {
+                    id: row.get(0)?,
+                    title: row.get(1)?,
+                    artist: row.get(2)?,
+                    thumbnail: row.get(3)?,
+                    duration_secs: row.get(4)?,
+                    stream_url: None,
+                };
+                let path: String = row.get(5)?;
+                let size: i64 = row.get(6)?;
+                Ok((track, path, u64::try_from(size).unwrap_or(0)))
+            })?
+            .filter_map(|r| r.ok())
+            .collect();
+        Ok(rows)
+    }
+
+    pub fn list_all_downloaded_ids(&self) -> Result<Vec<String>, AppError> {
+        let conn = self
+            .conn
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let mut stmt = conn.prepare_cached("SELECT track_id FROM downloads")?;
+        let rows = stmt
+            .query_map([], |row| row.get::<_, String>(0))?
+            .filter_map(|r| r.ok())
+            .collect();
+        Ok(rows)
+    }
+
+    pub fn list_download_collections(&self) -> Result<Vec<DbDownloadCollection>, AppError> {
+        let conn = self
+            .conn
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let mut col_stmt = conn.prepare_cached(
+            "SELECT uri, label, thumbnail FROM download_collections ORDER BY updated DESC",
+        )?;
+        let collections: Vec<(String, String, String)> = col_stmt
+            .query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))?
+            .filter_map(|r| r.ok())
+            .collect();
+        let mut track_stmt = conn.prepare_cached(
+            "SELECT t.id, t.title, t.artist, t.thumbnail, t.duration, d.path, d.size
+             FROM download_collection_tracks ct
+             JOIN tracks t ON t.id = ct.track_id
+             LEFT JOIN downloads d ON d.track_id = t.id
+             WHERE ct.collection_uri = ?1
+             ORDER BY ct.position",
+        )?;
+        let mut out = Vec::with_capacity(collections.len());
+        for (uri, label, thumbnail) in collections {
+            let mut total_tracks = 0usize;
+            let mut downloaded = Vec::new();
+            let rows = track_stmt.query_map(params![&uri], |row| {
+                let track = YtTrack {
+                    id: row.get(0)?,
+                    title: row.get(1)?,
+                    artist: row.get(2)?,
+                    thumbnail: row.get(3)?,
+                    duration_secs: row.get(4)?,
+                    stream_url: None,
+                };
+                let path: Option<String> = row.get(5)?;
+                let size: Option<i64> = row.get(6)?;
+                Ok((track, path, size))
+            })?;
+            for row in rows.flatten() {
+                total_tracks += 1;
+                if let (Some(path), Some(size)) = (row.1, row.2) {
+                    downloaded.push((row.0, path, u64::try_from(size).unwrap_or(0)));
+                }
+            }
+            out.push(DbDownloadCollection {
+                uri,
+                label,
+                thumbnail,
+                total_tracks,
+                tracks: downloaded,
+            });
+        }
+        Ok(out)
     }
 
     pub fn get_lyrics(&self, track_id: &str) -> Result<Option<CachedLyrics>, AppError> {
@@ -926,5 +1181,47 @@ mod tests {
 
         db.set_liked("t1", false).unwrap();
         assert!(!db.is_liked("t1").unwrap());
+    }
+
+    #[test]
+    fn grouped_and_standalone_downloads_lifecycle() {
+        let db = temp_cache();
+        let t1 = sample_track("c1");
+        let t2 = sample_track("c2");
+        let t3 = sample_track("solo");
+        db.upsert_tracks(&[t1.clone(), t2.clone(), t3.clone()])
+            .unwrap();
+
+        db.record_download_collection(
+            "spotify:playlist:9",
+            "Road Trip",
+            "",
+            &[t1.clone(), t2.clone()],
+        )
+        .unwrap();
+        db.mark_downloaded_with_mode("c1", "/tmp/c1.mp3", 100, false)
+            .unwrap();
+        db.mark_downloaded_with_mode("c2", "/tmp/c2.mp3", 200, false)
+            .unwrap();
+        db.mark_downloaded_with_mode("solo", "/tmp/solo.mp3", 300, true)
+            .unwrap();
+
+        let collections = db.list_download_collections().unwrap();
+        assert_eq!(collections.len(), 1);
+        assert_eq!(collections[0].label, "Road Trip");
+        assert_eq!(collections[0].total_tracks, 2);
+        assert_eq!(collections[0].tracks.len(), 2);
+
+        let standalone = db.list_standalone_downloads().unwrap();
+        assert_eq!(standalone.len(), 1);
+        assert_eq!(standalone[0].0.id, "solo");
+
+        let removed = db.delete_download_collection("spotify:playlist:9").unwrap();
+        assert_eq!(removed.len(), 2);
+        assert_eq!(db.list_download_collections().unwrap().len(), 0);
+        assert_eq!(
+            db.list_all_downloaded_ids().unwrap(),
+            vec!["solo".to_string()]
+        );
     }
 }

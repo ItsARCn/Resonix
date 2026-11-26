@@ -68,6 +68,16 @@ impl DownloadManager {
         &self,
         db: &SearchCache,
         track: &YtTrack,
+        on_progress: impl FnMut(DownloadProgress),
+    ) -> Result<bool, String> {
+        self.download_with_mode(db, track, true, on_progress).await
+    }
+
+    pub async fn download_with_mode(
+        &self,
+        db: &SearchCache,
+        track: &YtTrack,
+        standalone: bool,
         mut on_progress: impl FnMut(DownloadProgress),
     ) -> Result<bool, String> {
         let track_id = track.id.clone();
@@ -76,7 +86,8 @@ impl DownloadManager {
         if path.exists() {
             let size = std::fs::metadata(&path).map(|m| m.len()).unwrap_or(0);
             let _ = db.upsert_tracks(std::slice::from_ref(track));
-            let _ = db.mark_downloaded(&track_id, &path.to_string_lossy(), size);
+            let _ =
+                db.mark_downloaded_with_mode(&track_id, &path.to_string_lossy(), size, standalone);
             on_progress(DownloadProgress {
                 track_id,
                 status: "done".into(),
@@ -106,8 +117,13 @@ impl DownloadManager {
         match result {
             Ok(final_path) => {
                 let size = std::fs::metadata(&final_path).map(|m| m.len()).unwrap_or(0);
-                db.mark_downloaded(&track_id, &final_path.to_string_lossy(), size)
-                    .map_err(|e| e.to_string())?;
+                db.mark_downloaded_with_mode(
+                    &track_id,
+                    &final_path.to_string_lossy(),
+                    size,
+                    standalone,
+                )
+                .map_err(|e| e.to_string())?;
                 on_progress(DownloadProgress {
                     track_id,
                     status: "done".into(),
@@ -128,9 +144,22 @@ impl DownloadManager {
     }
 
     pub fn delete(&self, db: &SearchCache, track_id: &str) -> Result<(), String> {
-        let path = self.path_for(track_id);
-        let _ = std::fs::remove_file(&path);
-        db.remove_download(track_id).map_err(|e| e.to_string())?;
+        if let Some(path) = db
+            .remove_standalone_download(track_id)
+            .map_err(|e| e.to_string())?
+        {
+            let _ = std::fs::remove_file(path);
+        }
+        Ok(())
+    }
+
+    pub fn delete_collection(&self, db: &SearchCache, collection_uri: &str) -> Result<(), String> {
+        let orphan_paths = db
+            .delete_download_collection(collection_uri)
+            .map_err(|e| e.to_string())?;
+        for path in orphan_paths {
+            let _ = std::fs::remove_file(path);
+        }
         Ok(())
     }
 }

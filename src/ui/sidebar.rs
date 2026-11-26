@@ -1074,17 +1074,6 @@ fn contents(app: &mut App, ui: &mut egui::Ui, grid_art: Option<Rect>) {
     if nav_row(
         ui,
         &palette,
-        Icon::Music,
-        &gettext(locale, "Playlists"),
-        page == Page::Playlists,
-    )
-    .clicked()
-    {
-        app.actions.push(Action::Open(Page::Playlists));
-    }
-    if nav_row(
-        ui,
-        &palette,
         Icon::Download,
         &gettext(locale, "Downloads"),
         page == Page::Downloads,
@@ -1101,10 +1090,7 @@ fn contents(app: &mut App, ui: &mut egui::Ui, grid_art: Option<Rect>) {
     );
     ui.add_space(10.0);
 
-    let filter_id = egui::Id::new("sidebar-filter");
-    let mut filter = ui
-        .data(|data| data.get_temp::<Filter>(filter_id))
-        .unwrap_or_default();
+    let filter = Filter::Playlists;
     let show_search_id = egui::Id::new("sidebar-show-search");
     let mut show_search = ui
         .data(|data| data.get_temp::<bool>(show_search_id))
@@ -1112,9 +1098,42 @@ fn contents(app: &mut App, ui: &mut egui::Ui, grid_art: Option<Rect>) {
 
     let mut focus_search = false;
 
+    let lib_hover_id = ui.make_persistent_id("sidebar-library-header-hover");
+    let was_lib_hovered = ui
+        .data(|data| data.get_temp::<bool>(lib_hover_id))
+        .unwrap_or(false);
+    let lib_active = page == Page::Library;
+    let lib_icon_color = if lib_active {
+        palette.accent
+    } else if was_lib_hovered {
+        palette.text
+    } else {
+        palette.secondary
+    };
+    let lib_text_color = if lib_active {
+        palette.accent
+    } else {
+        palette.text
+    };
+    let mut lib_hovered = false;
+    let mut lib_clicked = false;
     ui.horizontal(|ui| {
         ui.add_space(6.0);
-        theme::icon(ui, Icon::Library, 22.0, palette.secondary);
+        let icon_resp = theme::icon(ui, Icon::Library, 22.0, lib_icon_color);
+        let icon_click = ui.interact(
+            icon_resp.rect,
+            ui.id().with("sidebar-library-icon"),
+            Sense::click(),
+        );
+        icon_click.widget_info(|| {
+            egui::WidgetInfo::labeled(
+                egui::WidgetType::Button,
+                ui.is_enabled(),
+                gettext(locale, "Library").as_ref(),
+            )
+        });
+        lib_hovered |= icon_click.hovered();
+        lib_clicked |= icon_click.clicked();
         ui.add_space(2.0);
         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
             ui.spacing_mut().item_spacing.x = 2.0;
@@ -1192,26 +1211,34 @@ fn contents(app: &mut App, ui: &mut egui::Ui, grid_art: Option<Rect>) {
                         <= room
                 });
                 if let Some(size) = fits {
-                    theme::text(ui, heading, theme::bold(size), palette.text);
+                    let title_resp = theme::text(ui, &*heading, theme::bold(size), lib_text_color);
+                    let title_click = ui.interact(
+                        title_resp.rect,
+                        ui.id().with("sidebar-library-heading"),
+                        Sense::click(),
+                    );
+                    title_click.widget_info(|| {
+                        egui::WidgetInfo::labeled(
+                            egui::WidgetType::Button,
+                            ui.is_enabled(),
+                            &*heading,
+                        )
+                    });
+                    lib_hovered |= title_click.hovered();
+                    lib_clicked |= title_click.clicked();
                 }
             });
         });
     });
+    if lib_hovered {
+        ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+    }
+    if lib_clicked {
+        app.actions.push(Action::Open(Page::Library));
+    }
+    ui.data_mut(|data| data.insert_temp(lib_hover_id, lib_hovered));
     ui.add_space(6.0);
 
-    ui.horizontal_wrapped(|ui| {
-        ui.spacing_mut().item_spacing = vec2(6.0, 6.0);
-        for (value, label) in [
-            (Filter::Playlists, gettext(locale, "Playlists")),
-            (Filter::Albums, gettext(locale, "Albums")),
-            (Filter::Artists, gettext(locale, "Artists")),
-            (Filter::Podcasts, gettext(locale, "Podcasts")),
-        ] {
-            if theme::soft_button(ui, &palette, None, &label, filter == value).clicked() {
-                filter = value;
-            }
-        }
-    });
     let sort = selected_sort(app, filter);
     ui.add_space(4.0);
     ui.horizontal_wrapped(|ui| {
@@ -1235,7 +1262,6 @@ fn contents(app: &mut App, ui: &mut egui::Ui, grid_art: Option<Rect>) {
         }
     });
     ui.data_mut(|data| {
-        data.insert_temp(filter_id, filter);
         data.insert_temp(show_search_id, show_search);
     });
     if show_search {

@@ -2895,6 +2895,8 @@ pub struct CardResponse {
 pub struct CardCover {
     /// A circular cover, as an artist's portrait.
     pub circular: bool,
+    /// Render the Liked Songs gradient cover instead of image artwork.
+    pub liked: bool,
     /// Hover offers a play control; cards that only navigate leave it off.
     pub playable: bool,
     /// The card's context is the one playing, so the control pauses.
@@ -2915,6 +2917,14 @@ impl CardCover {
     pub fn portrait(playing: bool) -> Self {
         Self {
             circular: true,
+            ..Self::square(playing)
+        }
+    }
+
+    /// The Liked Songs gradient heart cover that plays on hover.
+    pub fn liked(playing: bool) -> Self {
+        Self {
+            liked: true,
             ..Self::square(playing)
         }
     }
@@ -2949,6 +2959,7 @@ pub fn card(
 ) -> CardResponse {
     let CardCover {
         circular,
+        liked,
         playable,
         playing,
     } = cover;
@@ -2999,15 +3010,19 @@ pub fn card(
         let image_rect = Rect::from_min_size(rect.min + vec2(PAD, PAD), Vec2::splat(image_size));
         let radius = if circular { image_size / 2.0 } else { 6.0 };
         paint_shadow(ui, &palette, image_rect, radius);
-        paint_cover(
-            ui,
-            &palette,
-            image,
-            image_rect,
-            radius,
-            if circular { Icon::User } else { Icon::Music },
-            Some(app.backend.art()),
-        );
+        if liked {
+            super::sidebar::liked_cover(ui, image_rect, radius);
+        } else {
+            paint_cover(
+                ui,
+                &palette,
+                image,
+                image_rect,
+                radius,
+                if circular { Icon::User } else { Icon::Music },
+                Some(app.backend.art()),
+            );
+        }
         let text_left = rect.left() + PAD;
         let title_galley = ellipsized(ui, title, title_font, palette.text, text_width, 1);
         let title_rect = Rect::from_min_size(
