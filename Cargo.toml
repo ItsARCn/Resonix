@@ -5,8 +5,8 @@ version = "0.17.2"
 edition = "2024"
 rust-version = "1.98"
 license = "MIT"
-description = "A native Spotify client"
-repository = "https://github.com/crmne/spotifast"
+description = "A native YouTube Music client"
+repository = "https://github.com/ItsARCn/Resonix"
 keywords = ["spotify", "music", "egui", "librespot", "player"]
 categories = ["multimedia::audio"]
 

@@ -284,24 +284,8 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
 
             // The badges sit at the right end but grow with their text, so
             // measure them here, before the search field takes its share.
-            let remote_now = app
-                .now_playing()
-                .filter(|now| !now.local && !app.targets_own_soloist());
-            let device_icon = remote_now
-                .as_ref()
-                .and_then(|now| now.device_kind.as_deref())
-                .map_or(Icon::Speaker, crate::ui::devices::device_icon);
-            let device_galley = remote_now.map(|now| {
-                let label = match now.device_name {
-                    Some(device) => {
-                        // Translators: {device} is the name of the device playing the music.
-                        gettext(locale, "Playing on {device}").replace("{device}", &device)
-                    }
-                    None => gettext(locale, "Playing on another device").into_owned(),
-                };
-                ui.painter()
-                    .layout_no_wrap(label, theme::medium(12.5), palette.accent)
-            });
+            let device_icon = Icon::Speaker;
+            let device_galley: Option<std::sync::Arc<egui::Galley>> = None;
             let update = app.update.clone();
             let update_galley = update.as_ref().map(|update| {
                 let label = match &app.update_download {
@@ -476,16 +460,6 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                             ui.vertical(|ui| {
                                 ui.spacing_mut().item_spacing.y = 2.0;
                                 theme::text(ui, &name, theme::semibold(14.0), palette.text);
-                                if let Some(product) =
-                                    app.user.as_ref().and_then(|user| user.product.clone())
-                                {
-                                    theme::text(
-                                        ui,
-                                        capitalize(&product),
-                                        theme::regular(12.0),
-                                        palette.secondary,
-                                    );
-                                }
                             });
                         });
                         super::widgets::menu_separator(ui, &palette);
@@ -505,15 +479,6 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                         ) {
                             app.actions
                                 .push(Action::ShowDialog(crate::model::Dialog::Shortcuts));
-                        }
-                        super::widgets::menu_separator(ui, &palette);
-                        if super::widgets::menu_item(
-                            ui,
-                            &palette,
-                            Some(Icon::LogOut),
-                            &gettext(locale, "Sign out"),
-                        ) {
-                            app.actions.push(Action::SignOut);
                         }
                     });
                 if !app.network_reachable {
@@ -543,7 +508,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                     }
                     response.on_hover_text(gettext(
                         locale,
-                        "Spotifast is offline. Reconnecting automatically when connection returns.",
+                        "Resonix is offline. Reconnecting automatically when connection returns.",
                     ));
                 }
                 ui.add_space(4.0);
@@ -601,7 +566,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                     let hint = match activity {
                         BackgroundActivity::Library => gettext(locale, "Updating your library…"),
                         BackgroundActivity::Updates => gettext(locale, "Checking for updates…"),
-                        BackgroundActivity::Spotify => gettext(locale, "Waiting for Spotify…"),
+                        BackgroundActivity::Spotify => gettext(locale, "Loading…"),
                     };
                     theme::spinner(ui, SPINNER_SIZE, palette.secondary)
                         .on_hover_text(hint.as_ref());
@@ -653,6 +618,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
     );
 }
 
+#[allow(dead_code)]
 fn capitalize(text: &str) -> String {
     let mut chars = text.chars();
     match chars.next() {

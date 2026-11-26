@@ -4,7 +4,9 @@ use std::sync::Arc;
 
 use egui::{CornerRadius, Rect, Sense, Vec2, pos2, vec2};
 
-use crate::api::models::{Album, Episode, PlayableItem, Playlist, Show, pick_image};
+#[cfg(test)]
+use crate::api::models::{Episode, Show};
+use crate::api::models::{PlayableItem, Playlist, pick_image};
 use crate::app::App;
 use crate::i18n::gettext;
 use crate::model::{Action, Loadable, Page, RowContext, TopPeriod};
@@ -31,7 +33,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                 ui,
                 gettext(
                     app.locale,
-                    "Spotifast will reconnect automatically when your connection returns.",
+                    "Resonix will reconnect automatically when your connection returns.",
                 ),
                 theme::regular(14.0),
                 palette.secondary,
@@ -50,9 +52,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
         made_for_you(app, ui);
         top_mixes(app, ui);
     }
-    new_releases(app, ui);
     recently_played(app, ui);
-    podcasts(app, ui);
     top_artists(app, ui);
     top_tracks(app, ui);
     if app.settings.home.recommendations.visible {
@@ -373,84 +373,6 @@ fn top_mixes(app: &mut App, ui: &mut egui::Ui) {
     );
 }
 
-/// The latest releases from followed artists. A card opens its release;
-/// the title opens the page that plays all their songs, newest first.
-fn new_releases(app: &mut App, ui: &mut egui::Ui) {
-    let palette = app.palette;
-    let (albums, loading, failure) = match &app.home.new_releases {
-        Loadable::Loaded(albums) => (albums.clone(), false, None),
-        Loadable::Loading | Loadable::NotLoaded => (Vec::new(), true, None),
-        Loadable::Failed(error) => (Vec::new(), false, Some(error.clone())),
-    };
-    if albums.is_empty() && !loading && failure.is_none() {
-        return;
-    }
-    let open = widgets::linked_shelf(
-        ui,
-        &palette,
-        "new-releases",
-        &gettext(app.locale, "New releases"),
-        |ui| {
-            if albums.is_empty() && loading {
-                widgets::loading_row(ui, &palette, app.locale);
-            } else if albums.is_empty()
-                && let Some(message) = &failure
-            {
-                widgets::error_row(ui, app, message, Some(Page::Home));
-            }
-            for album in &albums {
-                release_card(app, ui, album);
-            }
-        },
-    );
-    if open {
-        app.actions.push(Action::Open(Page::NewReleases));
-    }
-}
-
-fn release_card(app: &mut App, ui: &mut egui::Ui, album: &Album) {
-    let palette = app.palette;
-    let artists =
-        crate::api::models::join_names(album.artists.iter().map(|artist| artist.name.as_str()));
-    let subtitle = if artists.is_empty() {
-        album.kind_label(app.locale).into_owned()
-    } else {
-        format!("{} • {artists}", album.kind_label(app.locale))
-    };
-    let context_here = app.playing_context_uri().as_deref() == Some(album.uri.as_str());
-    let playing_here = context_here && app.believed_playing();
-    let card_art = app.art_px(widgets::CARD_ART);
-    let card = widgets::card(
-        ui,
-        app,
-        pick_image(&album.images, card_art),
-        &album.name,
-        &subtitle,
-        widgets::CardCover::square(playing_here),
-    );
-    if card.play {
-        if context_here {
-            app.actions.push(Action::TogglePlay);
-        } else {
-            app.actions.push(Action::PlayContext {
-                uri: album.uri.clone(),
-                offset_uri: None,
-                offset_index: None,
-            });
-        }
-    }
-    if card.clicked {
-        app.actions
-            .push(Action::Open(Page::Album(album.id.clone())));
-    }
-    egui::Popup::context_menu(&card.response)
-        .id(ui.make_persistent_id(("home-new-releases-menu", &album.uri)))
-        .frame(widgets::menu_frame(&palette))
-        .show(|ui| {
-            widgets::context_menu_items(ui, app, &album.uri, &album.name, None);
-        });
-}
-
 fn playlist_cards(app: &mut App, ui: &mut egui::Ui, menu: &str, playlists: &[Playlist]) {
     let palette = app.palette;
     for playlist in playlists {
@@ -595,6 +517,7 @@ fn recently_played(app: &mut App, ui: &mut egui::Ui) {
 }
 
 /// Why an episode is on the podcast shelf.
+#[cfg(test)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum EpisodeReason {
     /// Started and not finished, with this much left.
@@ -604,13 +527,16 @@ pub(crate) enum EpisodeReason {
 }
 
 /// How many days after its release an unplayed episode still counts as new.
+#[cfg(test)]
 const NEW_EPISODE_DAYS: i64 = 30;
 /// The podcast shelf's card limit, as for Recently played.
+#[cfg(test)]
 const PODCAST_CARDS: usize = 16;
 
 /// The episodes on the podcast shelf: those to continue first, then each
 /// show's newest unstarted episode from the last month, each group newest
 /// first. `skip` leaves out shows that are audiobooks or no longer saved.
+#[cfg(test)]
 pub(crate) fn podcast_episodes(
     podcasts: &[(Show, Vec<Episode>)],
     skip: impl Fn(&Show) -> bool,
@@ -672,74 +598,6 @@ pub(crate) fn podcast_episodes(
             (show.clone(), episode, reason)
         })
         .collect()
-}
-
-fn podcasts(app: &mut App, ui: &mut egui::Ui) {
-    let palette = app.palette;
-    let episodes = podcast_episodes(
-        &app.home.podcasts,
-        |show| app.audiobook_shows.contains(&show.uri) || app.is_saved(&show.uri) == Some(false),
-        jiff::Zoned::now().date(),
-    );
-    if episodes.is_empty() {
-        return;
-    }
-    widgets::shelf(
-        ui,
-        &palette,
-        "podcasts",
-        &gettext(app.locale, "Your podcasts"),
-        |ui| {
-            for (show, episode, reason) in &episodes {
-                let subtitle = match reason {
-                    EpisodeReason::Continue { left_ms } => {
-                        // Translators: {time} is the time left in an episode, such as 12 min; {show} is the podcast's name.
-                        gettext(app.locale, "{time} left • {show}")
-                            .replace(
-                                "{time}",
-                                &crate::util::format_episode_ms(app.locale, *left_ms),
-                            )
-                            .replace("{show}", &show.name)
-                    }
-                    EpisodeReason::New => {
-                        // Translators: {show} is the podcast's name.
-                        gettext(app.locale, "New • {show}").replace("{show}", &show.name)
-                    }
-                };
-                let card_art = app.art_px(widgets::CARD_ART);
-                let card = widgets::card(
-                    ui,
-                    app,
-                    pick_image(&episode.images, card_art)
-                        .or_else(|| pick_image(&show.images, card_art)),
-                    &episode.name,
-                    &subtitle,
-                    widgets::CardCover::square(false),
-                );
-                if card.play {
-                    app.actions.push(Action::PlayEpisode {
-                        uri: episode.uri.clone(),
-                        resume_ms: episode.resume_ms(),
-                    });
-                }
-                if card.clicked && !show.id.is_empty() {
-                    app.actions.push(Action::Open(Page::Show(show.id.clone())));
-                }
-                egui::Popup::context_menu(&card.response)
-                    .id(ui.make_persistent_id(("home-podcasts-menu", &episode.uri)))
-                    .frame(widgets::menu_frame(&palette))
-                    .show(|ui| {
-                        widgets::item_menu(
-                            ui,
-                            app,
-                            &PlayableItem::Episode(episode.clone()),
-                            None,
-                            None,
-                        );
-                    });
-            }
-        },
-    );
 }
 
 fn top_artists(app: &mut App, ui: &mut egui::Ui) {

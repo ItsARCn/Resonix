@@ -209,6 +209,40 @@ pub fn open_spotify_url(uri: &str) -> Option<String> {
     Some(format!("https://open.spotify.com/{kind}/{id}"))
 }
 
+/// Web URL on YouTube for a Resonix URI when one maps cleanly to a YouTube
+/// video, playlist, or artist search. Local-only collections return `None`.
+pub fn open_youtube_url(uri: &str) -> Option<String> {
+    let kind = uri_kind(uri)?;
+    let id = uri_id(uri)?;
+    match kind {
+        "track" => Some(format!("https://www.youtube.com/watch?v={id}")),
+        "album" => {
+            let vid = id.strip_prefix("yt_")?;
+            Some(format!("https://www.youtube.com/watch?v={vid}"))
+        }
+        "artist" => {
+            let name = crate::youtube::models::decode_artist_id(id)?;
+            let encoded =
+                percent_encoding::utf8_percent_encode(&name, percent_encoding::NON_ALPHANUMERIC);
+            Some(format!(
+                "https://www.youtube.com/results?search_query={encoded}"
+            ))
+        }
+        "playlist" => {
+            if id.is_empty()
+                || id == "liked"
+                || id.starts_with("explore_")
+                || id.chars().all(|c| c.is_ascii_digit())
+            {
+                None
+            } else {
+                Some(format!("https://www.youtube.com/playlist?list={id}"))
+            }
+        }
+        _ => None,
+    }
+}
+
 /// The menu-bar shape for macOS: the circle with the play triangle punched
 /// out. macOS template images use only the alpha channel and paint the
 /// shape themselves, black in a light menu bar and white in a dark one.
@@ -659,6 +693,20 @@ mod tests {
         assert_eq!(
             open_spotify_url("spotify:album:z").as_deref(),
             Some("https://open.spotify.com/album/z")
+        );
+        assert_eq!(
+            open_youtube_url("spotify:track:dQw4w9WgXcQ").as_deref(),
+            Some("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
+        );
+        assert_eq!(
+            open_youtube_url("spotify:album:yt_dQw4w9WgXcQ").as_deref(),
+            Some("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
+        );
+        assert_eq!(open_youtube_url("spotify:playlist:12"), None);
+        assert_eq!(open_youtube_url("spotify:playlist:explore_0"), None);
+        assert_eq!(
+            open_youtube_url("spotify:playlist:PL12345").as_deref(),
+            Some("https://www.youtube.com/playlist?list=PL12345")
         );
     }
 

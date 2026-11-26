@@ -2,7 +2,6 @@
 
 use egui::{Align, CornerRadius, Frame, Layout, Margin, Stroke, Vec2, vec2};
 
-use crate::api::models::pick_image;
 use crate::app::App;
 use crate::i18n::{gettext, ngettext, pgettext};
 use crate::model::{Action, Dialog};
@@ -498,209 +497,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
         .unwrap_or(false);
     let mut changed = false;
     let mut any_visible = false;
-    let soloist = gettext(locale, "Spotify Soloist");
-    let soloist_rows = super::soloist::rows(app);
-    let soloist_keywords = row_matches(
-        &needle,
-        &soloist,
-        &gettext(locale, "Playback lossless setup key download updates"),
-    );
-    if soloist_keywords || section_matches(&needle, &soloist, &soloist_rows) {
-        any_visible = true;
-        // A word only the section knows shows it whole.
-        let rows_needle = if soloist_keywords {
-            ""
-        } else {
-            needle.as_str()
-        };
-        section(ui, &palette, &soloist, |ui| {
-            super::soloist::settings(app, ui, rows_needle, &soloist, &soloist_rows);
-        });
-    }
-
     let open_folder = gettext(locale, "Open folder");
-
-    let wanted = app
-        .settings
-        .web_client_id
-        .as_deref()
-        .map(str::trim)
-        .filter(|id| !id.is_empty())
-        .map(str::to_string);
-    let in_use = wanted
-        .as_deref()
-        .is_some_and(|wanted| app.web_app.as_deref() == Some(wanted));
-    let account = gettext(locale, "Account");
-    let sign_out = gettext(locale, "Sign out");
-    let account_rows = [
-        RowText::new(
-            gettext(locale, "Spotify registration"),
-            if app.shared_grant && !in_use {
-                gettext(
-                    locale,
-                    "You're still on the shared sign-in Spotifast used before, which Spotify can stop accepting at any time. Register Spotifast to keep listening.",
-                )
-            } else {
-                gettext(
-                    locale,
-                    "Spotifast connects with the Client ID you registered with Spotify.",
-                )
-            },
-        ),
-        RowText::new(
-            gettext(locale, "Register Spotifast"),
-            gettext(
-                locale,
-                "It takes about two minutes in Spotify's developer dashboard.",
-            ),
-        )
-        .when(!in_use),
-        RowText::new(
-            gettext(locale, "Spotifast registered"),
-            if app.shared_grant {
-                gettext(
-                    locale,
-                    "Supported requests use your Client ID. Other requests use the shared sign-in.",
-                )
-            } else {
-                gettext(
-                    locale,
-                    "Spotifast uses your Client ID for Spotify's Web API.",
-                )
-            },
-        )
-        .when(in_use),
-        RowText::new(
-            gettext(locale, "Authorize your Client ID"),
-            gettext(
-                locale,
-                "Spotify opens in your browser to verify the account.",
-            ),
-        )
-        .when(!in_use && wanted.is_some()),
-        RowText::new(sign_out.clone(), account.clone()),
-    ];
-    if section_matches(&needle, &account, &account_rows) {
-        any_visible = true;
-        section(ui, &palette, &account, |ui| {
-            if row_matches(&needle, &format!("{sign_out} {account}"), "") {
-                ui.horizontal(|ui| {
-                    ui.spacing_mut().item_spacing.x = 14.0;
-                    let avatar = app.user.as_ref().and_then(|user| {
-                        pick_image(&user.images, app.art_px(56.0)).map(str::to_string)
-                    });
-                    widgets::cover(ui, &palette, avatar.as_deref(), 56.0, 28.0, Icon::User);
-                    ui.vertical(|ui| {
-                        let name = app
-                            .user
-                            .as_ref()
-                            .map(|user| user.name().to_string())
-                            .unwrap_or_default();
-                        theme::text(ui, name, theme::semibold(16.0), palette.text);
-                        let product = app
-                            .user
-                            .as_ref()
-                            .and_then(|user| user.product.clone())
-                            .map(|product| match product.as_str() {
-                                "premium" => "Spotify Premium".to_string(),
-                                "free" | "open" => {
-                                    gettext(locale, "Spotify Free, local playback needs Premium")
-                                        .into_owned()
-                                }
-                                other => other.to_string(),
-                            })
-                            .unwrap_or_default();
-                        theme::text(ui, product, theme::regular(13.0), palette.secondary);
-                        if let Some(username) =
-                            app.local.connected.then(|| app.local.username.clone())
-                            && !username.is_empty()
-                        {
-                            theme::text(
-                                ui,
-                                // Translators: {username} is the Spotify account's user name.
-                                gettext(locale, "Connected as {username}")
-                                    .replace("{username}", &username),
-                                theme::regular(12.0),
-                                palette.dim,
-                            );
-                        }
-                    });
-                    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                        if theme::pill_button(ui, &palette, &sign_out, false).clicked() {
-                            app.actions.push(Action::SignOut);
-                        }
-                    });
-                });
-                ui.add_space(10.0);
-            }
-            // What is typed stays a draft while it is empty: clearing the
-            // field must not forget the app the session signs in with.
-            let draft_id = egui::Id::new("personal-web-client-id-draft");
-            let mut client_id = ui
-                .data(|data| data.get_temp::<String>(draft_id))
-                .unwrap_or_else(|| app.settings.web_client_id.clone().unwrap_or_default());
-            filtered_row(ui, &palette, &needle, &account, &account_rows[0], |ui| {
-                let response = Frame::new()
-                    .fill(palette.surface)
-                    .corner_radius(CornerRadius::same(6))
-                    .inner_margin(Margin::symmetric(10, 6))
-                    .show(ui, |ui| {
-                        widgets::text_edit(
-                            ui,
-                            app.locale,
-                            egui::TextEdit::singleline(&mut client_id)
-                                .id(egui::Id::new("personal-web-client-id"))
-                                .hint_text(
-                                    egui::RichText::new(gettext(locale, "Client ID"))
-                                        .color(palette.dim),
-                                )
-                                .font(theme::regular(13.0))
-                                .frame(egui::Frame::NONE)
-                                .desired_width(200.0),
-                        )
-                    })
-                    .inner;
-                if ui
-                    .data_mut(|data| data.remove_temp::<bool>(egui::Id::new(PERSONAL_APP_FOCUS_ID)))
-                    .unwrap_or(false)
-                {
-                    response.scroll_to_me(Some(Align::Center));
-                    response.request_focus();
-                }
-                if response.changed() {
-                    let trimmed = client_id.trim().to_string();
-                    if trimmed.is_empty() {
-                        ui.data_mut(|data| data.insert_temp(draft_id, client_id.clone()));
-                    } else {
-                        ui.data_mut(|data| data.remove_temp::<String>(draft_id));
-                        app.settings.web_client_id = Some(trimmed);
-                        changed = true;
-                    }
-                }
-            });
-            filtered_row(ui, &palette, &needle, &account, &account_rows[1], |ui| {
-                if theme::pill_button(ui, &palette, &gettext(locale, "Setup guide"), false)
-                    .clicked()
-                {
-                    app.actions.push(Action::OpenUrl(
-                        "https://spotifast.rocks/getting-started/#make-a-spotify-app".into(),
-                    ));
-                }
-            });
-            if in_use {
-                filtered_row(ui, &palette, &needle, &account, &account_rows[2], |_| {});
-            } else if wanted.is_some() {
-                filtered_row(ui, &palette, &needle, &account, &account_rows[3], |ui| {
-                    if theme::pill_button(ui, &palette, &gettext(locale, "Authorize"), true)
-                        .clicked()
-                    {
-                        app.actions.push(Action::ConfigurePersonalWebApp);
-                    }
-                });
-            }
-        });
-    }
-
     let (status, detail, action) = match &app.local_playback {
         crate::backend::LocalPlayback::Ready { .. } => (
             pgettext(locale, "playback status", "Ready"),
@@ -771,11 +568,13 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
             // Translators: {status} is a playback state such as Ready or Not set up.
             gettext(locale, "Status: {status}").replace("{status}", &status),
             detail,
-        ),
+        )
+        .when(false),
         RowText::new(
             gettext(locale, "Device name"),
             gettext(locale, "How this computer appears in Spotify Connect."),
-        ),
+        )
+        .when(false),
         RowText::new(
             gettext(locale, "Audio quality"),
             gettext(locale, "Higher bitrates use more data and cache space."),
@@ -797,12 +596,12 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
             super::keys::platform_shortcut(
                 &gettext(
                     locale,
-                    "Spotifast hides to the system tray. Quit from the tray menu or with Ctrl+Q.",
+                    "Resonix hides to the system tray. Quit from the tray menu or with Ctrl+Q.",
                 ),
                 // macOS has a menu bar where the others have a tray (#1006).
                 &gettext(
                     locale,
-                    "Spotifast hides to the menu bar. Quit from its menu-bar icon or with Cmd+Q.",
+                    "Resonix hides to the menu bar. Quit from its menu-bar icon or with Cmd+Q.",
                 ),
             )
             .to_owned(),
@@ -834,7 +633,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
             show_in_dock.clone(),
             gettext(
                 locale,
-                "When off, Spotifast lives in the menu bar and leaves Cmd+Tab. Open it from its menu-bar icon.",
+                "When off, Resonix lives in the menu bar and leaves Cmd+Tab. Open it from its menu-bar icon.",
             ),
         )
         .when(cfg!(target_os = "macos")),
@@ -1295,7 +1094,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
             custom_titlebar.clone(),
             gettext(
                 locale,
-                "Draw Spotifast's own title bar and window buttons instead of the desktop's.",
+                "Draw Resonix's own title bar and window buttons instead of the desktop's.",
             ),
         )
         .when(show_custom_titlebar),
@@ -1901,7 +1700,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                         .collect();
                     let mut cards = vec![Card {
                         key: BUILT_IN,
-                        label: "Spotifast",
+                        label: "Resonix",
                     }];
                     cards.extend(kept.iter().map(|index| Card {
                         key: &choices[*index].name,
@@ -2073,20 +1872,20 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                 0 => gettext(
                     locale,
                     // Translators: {folder} is the path of the MilkDrop presets folder.
-                    "None yet in {folder}. Add .milk files here. Spotifast downloads presets when MilkDrop first opens with an empty folder.",
+                    "None yet in {folder}. Add .milk files here. Resonix downloads presets when MilkDrop first opens with an empty folder.",
                 )
                 .replace("{folder}", &folder),
                 1 => gettext(
                     locale,
                     // Translators: {folder} is the path of the MilkDrop presets folder.
-                    "One preset in {folder}. Add .milk files here. Spotifast downloads presets when MilkDrop first opens with an empty folder.",
+                    "One preset in {folder}. Add .milk files here. Resonix downloads presets when MilkDrop first opens with an empty folder.",
                 )
                 .replace("{folder}", &folder),
                 n => ngettext(
                     locale,
                     // Translators: {count} is the number of presets, {folder} the path of the MilkDrop presets folder.
-                    "{count} preset in {folder}. Add .milk files here. Spotifast downloads presets when MilkDrop first opens with an empty folder.",
-                    "{count} presets in {folder}. Add .milk files here. Spotifast downloads presets when MilkDrop first opens with an empty folder.",
+                    "{count} preset in {folder}. Add .milk files here. Resonix downloads presets when MilkDrop first opens with an empty folder.",
+                    "{count} presets in {folder}. Add .milk files here. Resonix downloads presets when MilkDrop first opens with an empty folder.",
                     u32::try_from(n).unwrap_or(u32::MAX),
                 )
                 .replace("{count}", &n.to_string())
@@ -2457,7 +2256,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
             update_automatically_label.clone(),
             gettext(
                 locale,
-                "Downloads new releases in the background and installs them the next time Spotifast starts.",
+                "Downloads new releases in the background and installs them the next time Resonix starts.",
             ),
         ),
     ];
@@ -2503,7 +2302,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
     let source_code = gettext(locale, "Source code");
     let about_rows = [
         RowText::new(
-            format!("Spotifast {}", env!("CARGO_PKG_VERSION")),
+            format!("Resonix {}", env!("CARGO_PKG_VERSION")),
             built_with.clone(),
         ),
         RowText::new(
@@ -2520,7 +2319,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                 ui.vertical(|ui| {
                     theme::text(
                         ui,
-                        format!("Spotifast {}", env!("CARGO_PKG_VERSION")),
+                        format!("Resonix {}", env!("CARGO_PKG_VERSION")),
                         theme::semibold(15.0),
                         palette.text,
                     );
@@ -2632,7 +2431,7 @@ fn start_with_computer_detail(
     if matches!(state, Some(State::NeedsApproval(_))) && choice.is_some() {
         gettext(
             locale,
-            "Allow Spotifast in System Settings, General, Login Items.",
+            "Allow Resonix in System Settings, General, Login Items.",
         )
     } else if choice == Some(Start::Hidden) && !keeps_running {
         if cfg!(target_os = "macos") {
@@ -2649,12 +2448,12 @@ fn start_with_computer_detail(
     } else if cfg!(target_os = "macos") {
         gettext(
             locale,
-            "Open Spotifast when you log in, with its window or in the menu bar.",
+            "Open Resonix when you log in, with its window or in the menu bar.",
         )
     } else {
         gettext(
             locale,
-            "Open Spotifast when you log in, with its window or in the tray.",
+            "Open Resonix when you log in, with its window or in the tray.",
         )
     }
 }
@@ -3063,7 +2862,7 @@ mod tests {
         assert_eq!(
             RELEASE_NOTES_URL,
             format!(
-                "https://github.com/crmne/spotifast/releases/tag/v{}",
+                "https://github.com/ItsARCn/Resonix/releases/tag/v{}",
                 env!("CARGO_PKG_VERSION")
             )
         );

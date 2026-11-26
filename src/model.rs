@@ -1355,7 +1355,7 @@ pub enum Action {
         uri: String,
         saved: bool,
     },
-    OpenInSpotify(String),
+    OpenOnYouTube(String),
     Search(String),
     /// The search field was emptied or its selection typed over, so the
     /// next query starts a new run of typing.

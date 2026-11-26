@@ -33,7 +33,7 @@ use std::sync::Mutex;
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Where the release files are.
-const DOWNLOADS: &str = "https://github.com/crmne/spotifast/releases/download";
+const DOWNLOADS: &str = "https://github.com/ItsARCn/Resonix/releases/download";
 
 type UpdaterCache = Mutex<Option<(crate::settings::ProxyConfig, Updater)>>;
 static UPDATER: UpdaterCache = Mutex::new(None);
@@ -52,8 +52,8 @@ pub const CONFIG: UpdateConfig = UpdateConfig {
     // next one.
     appimage: true,
     ..UpdateConfig::new(
-        "crmne/spotifast",
-        "Spotifast",
+        "ItsARCn/Resonix",
+        "Resonix",
         "spotifast",
         env!("CARGO_PKG_VERSION"),
     )

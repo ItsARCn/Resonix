@@ -75,7 +75,6 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
             player_bar::show(app, ui);
         }
         lyrics::immersive_click(app, ui);
-        devices::popup(app, ctx);
         dialogs::show(app, ctx);
         toasts(app, ctx, theme::PLAYER_BAR_HEIGHT + 16.0);
         return;
@@ -105,13 +104,9 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
         if app.show_lyrics_panel {
             lyrics::side_panel(app, ui);
         }
-        if app.show_friends_panel {
-            friends::side_panel(app, ui);
-        }
         central(app, ui);
     }
     keep_room_for_panels(app, ctx);
-    devices::popup(app, ctx);
     dialogs::show(app, ctx);
     update::show(app, ctx);
     widgets::drag_ghost(ctx, &app.palette, app.locale);
@@ -152,7 +147,7 @@ fn keep_room_for_panels(app: &App, ctx: &Context) {
     let width = main_min_width(
         topbar::least_width(ctx),
         panels && app.settings.sidebar_visible,
-        panels && (app.show_queue_panel || app.show_lyrics_panel || app.show_friends_panel),
+        panels && (app.show_queue_panel || app.show_lyrics_panel),
     )
     .round();
     let id = Id::new("main-min-width");
@@ -342,15 +337,7 @@ fn central(app: &mut App, ui: &mut egui::Ui) {
             topbar::show(app, ui);
             // One banner at a time: a song that will not play matters more
             // than a slow app, which waits its turn.
-            if app.dialog.is_none() && page != Page::Settings {
-                if app.soloist_waiting() {
-                    soloist::banner(app, ui);
-                } else if app.audio_key_banner {
-                    audio_key_banner(app, ui);
-                } else if app.slow_banner {
-                    slow_banner(app, ui);
-                }
-            }
+
             let page_key = page.encode();
             let mut area = egui::ScrollArea::vertical()
                 .id_salt(("page", &page_key))

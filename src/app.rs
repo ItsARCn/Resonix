@@ -943,7 +943,7 @@ const RECENTS_PAGE: u32 = 50;
 /// Who the desktop's media controls belong to. Links to Spotify, as
 /// `spotify:` URIs or web addresses, are what they may ask Spotifast to open.
 fn media_app() -> fastframe_now_playing::App {
-    let mut app = fastframe_now_playing::App::new("spotifast", "Spotifast");
+    let mut app = fastframe_now_playing::App::new("spotifast", "Resonix");
     app.uri_schemes = vec!["spotify".into(), "https".into(), "http".into()];
     app
 }
@@ -1087,12 +1087,12 @@ fn tray_config() -> fastframe_tray::Config {
     use fastframe_tray::MenuItem;
     fastframe_tray::Config {
         id: "spotifast",
-        title: "Spotifast".into(),
+        title: "Resonix".into(),
         icon: util::app_icon_rgba,
         template_icon: Some(util::tray_template_rgba),
         themed_icon: true,
         menu: vec![
-            MenuItem::action(TRAY_SHOW, "Show or hide Spotifast"),
+            MenuItem::action(TRAY_SHOW, "Show or hide Resonix"),
             MenuItem::action(TRAY_MAIN_WINDOW, "Open main window"),
             MenuItem::Separator,
             MenuItem::action(TRAY_PLAY_PAUSE, play_pause_label(false)),
@@ -1753,10 +1753,10 @@ impl App {
                 }
             }
             Err(error) => {
-                log::warn!("couldn't change how Spotifast starts at login: {error}");
+                log::warn!("couldn't change how Resonix starts at login: {error}");
                 self.toast_error(gettext(
                     self.locale,
-                    "Couldn't change how Spotifast starts with your computer.",
+                    "Couldn't change how Resonix starts with your computer.",
                 ));
                 // Show what the system really has.
                 self.autostart_wanted = None;
@@ -3207,7 +3207,7 @@ impl App {
                             if manual || self.update.as_ref() != Some(&notice) {
                                 self.toast(
                                     // Translators: {version} is a version number such as 1.4.0.
-                                    gettext(self.locale, "Spotifast {version} is available")
+                                    gettext(self.locale, "Resonix {version} is available")
                                         .replace("{version}", &notice.version.to_string()),
                                 );
                             }
@@ -3218,7 +3218,7 @@ impl App {
                         Ok(None) => {
                             self.update = None;
                             if manual {
-                                self.toast(gettext(self.locale, "Spotifast is up to date"));
+                                self.toast(gettext(self.locale, "Resonix is up to date"));
                             } else {
                                 log::debug!("this is the newest release");
                             }
@@ -10174,7 +10174,7 @@ impl App {
                 self.pending_link = None;
                 self.toast_error(gettext(
                     self.locale,
-                    "Spotifast cannot open this kind of Spotify link",
+                    "Resonix cannot open this kind of link",
                 ));
             }
         }
@@ -12533,10 +12533,7 @@ impl App {
             .filter(|uri| matches!(util::uri_kind(uri), Some("track" | "episode")))
             .collect();
         if uris.is_empty() {
-            self.toast(gettext(
-                self.locale,
-                "The clipboard has no Spotify song links",
-            ));
+            self.toast(gettext(self.locale, "The clipboard has no song links"));
             return;
         }
         let mut paste = PendingPaste {
@@ -13457,7 +13454,9 @@ impl App {
             } => self.set_hidden_in_playlist(playlist_uri, track_uri, hidden),
             Action::RefreshQueue => self.refresh_queue(true),
             Action::CopyLink(uri) => {
-                if let Some(url) = util::open_spotify_url(&uri) {
+                if let Some(url) =
+                    util::open_youtube_url(&uri).or_else(|| util::open_spotify_url(&uri))
+                {
                     ctx.copy_text(url);
                     self.toast(gettext(self.locale, "Link copied"));
                 }
@@ -13471,7 +13470,10 @@ impl App {
             Action::CopySongs(items) => {
                 let links: Vec<String> = items
                     .iter()
-                    .filter_map(|item| util::open_spotify_url(item.uri()))
+                    .filter_map(|item| {
+                        util::open_youtube_url(item.uri())
+                            .or_else(|| util::open_spotify_url(item.uri()))
+                    })
                     .collect();
                 if !links.is_empty() {
                     // One link a line, in the platform's own line breaks.
@@ -13492,8 +13494,8 @@ impl App {
                 }
             }
             Action::PasteSongs { playlist_id, text } => self.paste_songs(playlist_id, &text),
-            Action::OpenInSpotify(uri) => {
-                if let Some(url) = util::open_spotify_url(&uri) {
+            Action::OpenOnYouTube(uri) => {
+                if let Some(url) = util::open_youtube_url(&uri) {
                     ctx.open_url(egui::OpenUrl::new_tab(url));
                 }
             }
@@ -15205,9 +15207,9 @@ impl App {
     /// Keeps the current track in the window and taskbar title (#94).
     fn sync_window_title(&mut self, ctx: &egui::Context) {
         let title = match self.now_playing().filter(|now| now.playing) {
-            Some(now) if now.subtitle.is_empty() => format!("{} - Spotifast", now.title),
+            Some(now) if now.subtitle.is_empty() => format!("{} - Resonix", now.title),
             Some(now) => format!("{} - {}", now.subtitle, now.title),
-            None => "Spotifast".to_string(),
+            None => "Resonix".to_string(),
         };
         if title != self.window_title {
             ctx.send_viewport_cmd(egui::ViewportCommand::Title(title.clone()));
@@ -29733,7 +29735,7 @@ mod tests {
         assert_eq!(app.update, None);
         assert_eq!(
             app.toasts.last().map(|toast| toast.message.as_str()),
-            Some("Spotifast is up to date")
+            Some("Resonix is up to date")
         );
 
         app.toasts.clear();
@@ -29782,7 +29784,7 @@ mod tests {
         );
         assert_eq!(
             app.toasts.last().map(|toast| toast.message.as_str()),
-            Some("Spotifast 1.2.3 is available")
+            Some("Resonix 1.2.3 is available")
         );
     }
 
@@ -35794,7 +35796,7 @@ mod tests {
                 "unknown",
                 // Local playback is this computer, which Spotify has not
                 // named because it is not a remote device.
-                "Spotifast",
+                "Resonix",
             ]
         );
         // No devices seen yet is an empty array, not an empty string, so a

@@ -648,10 +648,7 @@ fn menus(app: &mut App, view: &mut View, rows: &[Row], queue_uris: &[String], he
 /// Where a song comes from here: the big window's search or Liked Songs.
 fn add_menu(app: &mut App, ui: &mut egui::Ui) {
     let locale = app.locale;
-    if ui
-        .button(gettext(locale, "Search Spotify").as_ref())
-        .clicked()
-    {
+    if ui.button(gettext(locale, "Search").as_ref()).clicked() {
         app.actions.push(Action::FocusSearch);
         app.actions.push(Action::ToggleWinampWindow);
     }

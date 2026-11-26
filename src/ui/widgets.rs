@@ -1462,13 +1462,15 @@ fn item_menu_at(
             );
         }
     }
-    if menu_item(
-        ui,
-        &palette,
-        Some(Icon::ExternalLink),
-        &gettext(locale, "Open in Spotify"),
-    ) {
-        app.actions.push(Action::OpenInSpotify(uri));
+    if crate::util::open_youtube_url(&uri).is_some()
+        && menu_item(
+            ui,
+            &palette,
+            Some(Icon::ExternalLink),
+            &gettext(locale, "Open on YouTube"),
+        )
+    {
+        app.actions.push(Action::OpenOnYouTube(uri));
     }
 }
 
@@ -1587,13 +1589,15 @@ pub fn context_menu_items(
     ) {
         app.actions.push(Action::CopyLink(uri.to_string()));
     }
-    if menu_item(
-        ui,
-        &palette,
-        Some(Icon::ExternalLink),
-        &gettext(locale, "Open in Spotify"),
-    ) {
-        app.actions.push(Action::OpenInSpotify(uri.to_string()));
+    if crate::util::open_youtube_url(uri).is_some()
+        && menu_item(
+            ui,
+            &palette,
+            Some(Icon::ExternalLink),
+            &gettext(locale, "Open on YouTube"),
+        )
+    {
+        app.actions.push(Action::OpenOnYouTube(uri.to_string()));
     }
 }
 
@@ -5318,6 +5322,85 @@ mod tests {
                 .iter()
                 .any(|(_, n)| n.label() == Some("Downloaded")),
             "downloaded track row should show Downloaded state"
+        );
+    }
+
+    #[test]
+    fn context_menu_shows_open_on_youtube_only_for_youtube_uris() {
+        let mut app = test_app();
+        app.backend.shutdown();
+        let ctx = egui::Context::default();
+        ctx.enable_accesskit();
+        theme::install(&ctx);
+
+        let mut render_menu = |uri: &str, name: &str| {
+            app.actions.clear();
+            let mut output = ctx.run_ui(
+                egui::RawInput {
+                    screen_rect: Some(Rect::from_min_size(egui::Pos2::ZERO, vec2(400.0, 500.0))),
+                    ..Default::default()
+                },
+                |ui| {
+                    context_menu_items(ui, &mut app, uri, name, None);
+                },
+            );
+            output.textures_delta.clear();
+            output.platform_output.accesskit_update.unwrap()
+        };
+
+        let local_tree = render_menu("spotify:playlist:12", "My Mix");
+        assert!(
+            !local_tree
+                .nodes
+                .iter()
+                .any(|(_, n)| n.label() == Some("Open on YouTube")),
+            "local numeric playlist should not offer Open on YouTube"
+        );
+
+        let yt_tree = render_menu("spotify:playlist:PL12345", "YT Mix");
+        let btn_bounds = yt_tree
+            .nodes
+            .iter()
+            .find(|(_, n)| n.label() == Some("Open on YouTube"))
+            .and_then(|(_, n)| n.bounds())
+            .expect("YouTube playlist should show Open on YouTube");
+
+        let pos = pos2(
+            ((btn_bounds.x0 + btn_bounds.x1) / 2.0) as f32,
+            ((btn_bounds.y0 + btn_bounds.y1) / 2.0) as f32,
+        );
+        let mut output = ctx.run_ui(
+            egui::RawInput {
+                screen_rect: Some(Rect::from_min_size(egui::Pos2::ZERO, vec2(400.0, 500.0))),
+                events: vec![
+                    egui::Event::PointerMoved(pos),
+                    egui::Event::PointerButton {
+                        pos,
+                        button: egui::PointerButton::Primary,
+                        pressed: true,
+                        modifiers: egui::Modifiers::NONE,
+                    },
+                    egui::Event::PointerButton {
+                        pos,
+                        button: egui::PointerButton::Primary,
+                        pressed: false,
+                        modifiers: egui::Modifiers::NONE,
+                    },
+                ],
+                ..Default::default()
+            },
+            |ui| {
+                context_menu_items(ui, &mut app, "spotify:playlist:PL12345", "YT Mix", None);
+            },
+        );
+        output.textures_delta.clear();
+        assert!(
+            matches!(
+                app.actions.as_slice(),
+                [Action::OpenOnYouTube(uri)] if uri == "spotify:playlist:PL12345"
+            ),
+            "expected OpenOnYouTube action, got {:?}",
+            app.actions
         );
     }
 }
