@@ -1525,6 +1525,19 @@ pub fn context_menu_items(
     if owned_playlist.is_none() && menu_item(ui, &palette, Some(icon), &text) {
         app.actions.push(Action::ToggleSaved(uri.to_string()));
     }
+    if matches!(kind, "playlist" | "album" | "artist")
+        && menu_item(
+            ui,
+            &palette,
+            Some(Icon::Download),
+            &gettext(locale, "Download"),
+        )
+    {
+        app.actions.push(Action::DownloadContext {
+            uri: uri.to_string(),
+            label: name.to_string(),
+        });
+    }
     if let Some(playlist) = owned_playlist {
         if menu_item(
             ui,
@@ -1671,6 +1684,7 @@ struct Columns {
     added: f32,
     plays: f32,
     heart: f32,
+    download: f32,
     duration: f32,
     more: f32,
 }
@@ -1715,6 +1729,7 @@ fn columns(width: f32, row: &TrackRow<'_>) -> Columns {
             0.0
         },
         heart: if row.compact { 0.0 } else { 36.0 },
+        download: if row.compact { 0.0 } else { 32.0 },
         duration: if row.compact { 44.0 } else { 56.0 },
         more: if row.compact { 0.0 } else { 36.0 },
     }
@@ -1960,7 +1975,7 @@ fn track_row_contents(
         }
         x += cols.cover;
     }
-    let right_fixed = cols.heart + cols.duration + cols.more + 8.0;
+    let right_fixed = cols.heart + cols.download + cols.duration + cols.more + 8.0;
     let text_right =
         rect.right() - right_fixed - cols.plays - cols.added - cols.added_by - cols.album;
     let title_rect = Rect::from_min_max(
@@ -2278,6 +2293,49 @@ fn track_row_contents(
             }
         }
         x += cols.heart;
+    }
+
+    // Download.
+    if cols.download > 0.0 {
+        let dl_rect = Rect::from_min_size(pos2(x, rect.top()), vec2(cols.download, row_height));
+        if let PlayableItem::Track(track) = row.item
+            && !unavailable
+        {
+            let downloaded = app.is_uri_downloaded(&track.uri);
+            let downloading = app.is_uri_downloading(&track.uri);
+            let mut child = ui.new_child(
+                UiBuilder::new()
+                    .max_rect(dl_rect)
+                    .layout(Layout::centered_and_justified(egui::Direction::LeftToRight)),
+            );
+            let focused = child.memory(|memory| memory.has_focus(child.next_auto_id()));
+            if !hovered && !downloaded && !downloading && !focused {
+                child.set_opacity(0.45);
+            }
+            if downloading {
+                theme::spinner(&mut child, 15.0, palette.accent);
+            } else {
+                let (color, hover, tooltip) = if downloaded {
+                    (
+                        palette.accent,
+                        palette.accent_hover,
+                        gettext(app.locale, "Downloaded"),
+                    )
+                } else {
+                    (
+                        palette.secondary,
+                        palette.text,
+                        gettext(app.locale, "Download"),
+                    )
+                };
+                if theme::icon_button(&mut child, Icon::Download, 16.0, color, hover, &tooltip)
+                    .clicked()
+                {
+                    app.actions.push(Action::DownloadTrack(track.clone()));
+                }
+            }
+        }
+        x += cols.download;
     }
 
     // Duration.
@@ -2705,7 +2763,7 @@ pub fn table_header(
     } else {
         0.0
     };
-    let right_fixed = 36.0 + 56.0 + 36.0 + 8.0;
+    let right_fixed = 36.0 + 32.0 + 56.0 + 36.0 + 8.0;
     let mut cx =
         rect.right() - right_fixed - plays_width - added_width - added_by_width - album_width;
     if album_width > 0.0 {
@@ -5149,5 +5207,102 @@ mod tests {
             .unwrap();
         assert_eq!(meta.options, crate::images::COVER_TEXTURE);
         assert_eq!(meta.options.mipmap_mode, Some(egui::TextureFilter::Linear));
+    }
+
+    #[test]
+    fn track_row_download_button_emits_download_track() {
+        let mut app = test_app();
+        app.backend.shutdown();
+        let ctx = egui::Context::default();
+        ctx.enable_accesskit();
+        theme::install(&ctx);
+        let item = song("spotify:track:dltest");
+        let context = RowContext::Queue;
+        let draw = |app: &mut App, events| {
+            app.actions.clear();
+            let mut output = ctx.run_ui(
+                egui::RawInput {
+                    screen_rect: Some(Rect::from_min_size(egui::Pos2::ZERO, vec2(760.0, 200.0))),
+                    events,
+                    ..Default::default()
+                },
+                |ui| {
+                    track_row_response(
+                        ui,
+                        app,
+                        TrackRow {
+                            index: 0,
+                            number: Some(1),
+                            item: &item,
+                            context: &context,
+                            show_cover: false,
+                            show_album: false,
+                            added_at: None,
+                            added_by: None,
+                            show_added_by: false,
+                            show_plays: false,
+                            compact: false,
+                            thin: false,
+                            shift: 0.0,
+                            picked: false,
+                            picked_songs: &[],
+                            picked_positions: &[],
+                            position: None,
+                        },
+                    );
+                },
+            );
+            output.textures_delta.clear();
+            (
+                output.platform_output.accesskit_update.unwrap(),
+                std::mem::take(&mut app.actions),
+            )
+        };
+        draw(&mut app, vec![]);
+        let (tree, _) = draw(&mut app, vec![]);
+        let dl_bounds = tree
+            .nodes
+            .iter()
+            .find(|(_, n)| n.label() == Some("Download"))
+            .and_then(|(_, n)| n.bounds())
+            .expect("Download button in track_row");
+        let pos = pos2(
+            ((dl_bounds.x0 + dl_bounds.x1) / 2.0) as f32,
+            ((dl_bounds.y0 + dl_bounds.y1) / 2.0) as f32,
+        );
+        let (_, actions) = draw(
+            &mut app,
+            vec![
+                egui::Event::PointerMoved(pos),
+                egui::Event::PointerButton {
+                    pos,
+                    button: egui::PointerButton::Primary,
+                    pressed: true,
+                    modifiers: egui::Modifiers::NONE,
+                },
+                egui::Event::PointerButton {
+                    pos,
+                    button: egui::PointerButton::Primary,
+                    pressed: false,
+                    modifiers: egui::Modifiers::NONE,
+                },
+            ],
+        );
+        assert!(
+            matches!(
+                actions.as_slice(),
+                [Action::DownloadTrack(track)] if track.uri == "spotify:track:dltest"
+            ),
+            "expected DownloadTrack, got {actions:?}"
+        );
+
+        app.downloaded_ids.insert("dltest".into());
+        let (tree, _) = draw(&mut app, vec![]);
+        assert!(
+            tree.nodes
+                .iter()
+                .any(|(_, n)| n.label() == Some("Downloaded")),
+            "downloaded track row should show Downloaded state"
+        );
     }
 }

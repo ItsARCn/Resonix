@@ -467,6 +467,47 @@ pub fn actions_row(
             app.actions.push(Action::SaveRadio(seed.clone()));
         }
         if let Some(uri) = &actions.play_uri {
+            let view_uris = actions.view.as_deref().unwrap_or(&[]);
+            let all_downloaded = app.all_uris_downloaded(view_uris);
+            let any_downloading = app.any_uri_downloading(view_uris);
+            let can_download = actions.view.as_ref().is_none_or(|uris| !uris.is_empty());
+            let (dl_color, dl_hover, dl_tooltip) = if any_downloading {
+                (
+                    palette.accent,
+                    palette.accent_hover,
+                    gettext(locale, "Downloading…"),
+                )
+            } else if all_downloaded {
+                (
+                    palette.accent,
+                    palette.accent_hover,
+                    gettext(locale, "Downloaded"),
+                )
+            } else {
+                (palette.secondary, palette.text, gettext(locale, "Download"))
+            };
+            if ui
+                .add_enabled_ui(can_download, |ui| {
+                    theme::icon_button(ui, Icon::Download, 26.0, dl_color, dl_hover, &dl_tooltip)
+                })
+                .inner
+                .clicked()
+            {
+                let is_filtered = filter.as_deref().is_some_and(|f| !f.trim().is_empty());
+                if (is_filtered || actions.save_radio.is_some())
+                    && let Some(uris) = &actions.view
+                {
+                    app.actions.push(Action::DownloadUris {
+                        label: actions.name.to_string(),
+                        uris: uris.to_vec(),
+                    });
+                } else {
+                    app.actions.push(Action::DownloadContext {
+                        uri: uri.clone(),
+                        label: actions.name.to_string(),
+                    });
+                }
+            }
             let more = theme::icon_button(
                 ui,
                 Icon::Ellipsis,
@@ -1835,6 +1876,86 @@ pub fn top_songs(app: &mut App, ui: &mut egui::Ui) {
         .map(|(item, _, _)| item.uri().to_string())
         .collect::<Vec<_>>()
         .into();
+    let locale = app.locale;
+    let top_title = gettext(locale, "Your top songs");
+    ui.horizontal(|ui| {
+        ui.spacing_mut().item_spacing.x = 18.0;
+        if ui
+            .add_enabled_ui(!uris.is_empty(), |ui| {
+                theme::circle_button(
+                    ui,
+                    Icon::PlayFilled,
+                    56.0,
+                    palette.accent,
+                    palette.accent_hover,
+                    palette.on_accent,
+                    &gettext(locale, "Play"),
+                )
+            })
+            .inner
+            .clicked()
+        {
+            app.actions.push(Action::PlayUris {
+                uris: uris.to_vec(),
+                index: 0,
+            });
+        }
+        let shuffle = app.playing_context_shuffle();
+        if theme::icon_button(
+            ui,
+            Icon::Shuffle,
+            26.0,
+            if shuffle {
+                palette.accent
+            } else {
+                palette.secondary
+            },
+            if shuffle {
+                palette.accent_hover
+            } else {
+                palette.text
+            },
+            &if shuffle {
+                gettext(locale, "Shuffle off")
+            } else {
+                gettext(locale, "Shuffle")
+            },
+        )
+        .clicked()
+        {
+            app.actions.push(Action::SetShuffle(!shuffle));
+        }
+        let all_downloaded = app.all_uris_downloaded(&uris);
+        let any_downloading = app.any_uri_downloading(&uris);
+        let (dl_color, dl_hover, dl_tooltip) = if any_downloading {
+            (
+                palette.accent,
+                palette.accent_hover,
+                gettext(locale, "Downloading…"),
+            )
+        } else if all_downloaded {
+            (
+                palette.accent,
+                palette.accent_hover,
+                gettext(locale, "Downloaded"),
+            )
+        } else {
+            (palette.secondary, palette.text, gettext(locale, "Download"))
+        };
+        if ui
+            .add_enabled_ui(!uris.is_empty(), |ui| {
+                theme::icon_button(ui, Icon::Download, 26.0, dl_color, dl_hover, &dl_tooltip)
+            })
+            .inner
+            .clicked()
+        {
+            app.actions.push(Action::DownloadUris {
+                label: top_title.to_string(),
+                uris: uris.to_vec(),
+            });
+        }
+    });
+    ui.add_space(12.0);
     table(
         app,
         ui,
@@ -5594,6 +5715,101 @@ mod tests {
         assert!(
             app.table_rows.contains_key(&Page::Playlist("pl4".into())),
             "the open page stays"
+        );
+    }
+
+    #[test]
+    fn collection_download_button_requests_context_or_filtered_uris() {
+        let ctx = egui::Context::default();
+        ctx.enable_accesskit();
+        theme::install(&ctx);
+        let mut app = test_app();
+        let mut filter = String::new();
+        let mut draw = |filter: &mut String, events| {
+            app.actions.clear();
+            let mut output = ctx.run_ui(
+                egui::RawInput {
+                    screen_rect: Some(Rect::from_min_size(egui::Pos2::ZERO, vec2(800.0, 520.0))),
+                    events,
+                    ..Default::default()
+                },
+                |ui| {
+                    actions_row(
+                        &mut app,
+                        ui,
+                        Actions {
+                            play_uri: Some("spotify:playlist:test".into()),
+                            view: Some(Arc::from([
+                                "spotify:track:1".into(),
+                                "spotify:track:2".into(),
+                            ])),
+                            saved: None,
+                            saved_icons: (Icon::CirclePlus, Icon::CircleCheck),
+                            saved_tooltips: Default::default(),
+                            owned_playlist: None,
+                            reload: None,
+                            name: "Test",
+                            save_radio: None,
+                            plays_shown_rows: false,
+                        },
+                        Some(filter),
+                    );
+                },
+            );
+            output.textures_delta.clear();
+            (
+                output.platform_output.accesskit_update.unwrap(),
+                std::mem::take(&mut app.actions),
+            )
+        };
+        let click = |pos| {
+            vec![
+                egui::Event::PointerMoved(pos),
+                egui::Event::PointerButton {
+                    pos,
+                    button: egui::PointerButton::Primary,
+                    pressed: true,
+                    modifiers: egui::Modifiers::NONE,
+                },
+                egui::Event::PointerButton {
+                    pos,
+                    button: egui::PointerButton::Primary,
+                    pressed: false,
+                    modifiers: egui::Modifiers::NONE,
+                },
+            ]
+        };
+        draw(&mut filter, vec![]);
+        let (tree, _) = draw(&mut filter, vec![]);
+        let dl_bounds = tree
+            .nodes
+            .iter()
+            .find(|(_, n)| n.label() == Some("Download"))
+            .and_then(|(_, n)| n.bounds())
+            .expect("Download button in actions_row");
+        let pos = pos2(
+            ((dl_bounds.x0 + dl_bounds.x1) / 2.0) as f32,
+            ((dl_bounds.y0 + dl_bounds.y1) / 2.0) as f32,
+        );
+        let (_, actions) = draw(&mut filter, click(pos));
+        assert!(
+            matches!(
+                actions.as_slice(),
+                [Action::DownloadContext { uri, label }]
+                    if uri == "spotify:playlist:test" && label == "Test"
+            ),
+            "expected DownloadContext, got {actions:?}"
+        );
+
+        filter = "match".into();
+        let (_, actions) = draw(&mut filter, click(pos));
+        assert!(
+            matches!(
+                actions.as_slice(),
+                [Action::DownloadUris { label, uris }]
+                    if label == "Test" && uris.as_slice() == ["spotify:track:1", "spotify:track:2"]
+            ),
+            "expected DownloadUris when filtered, got {actions:?}"
         );
     }
 }

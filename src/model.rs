@@ -109,7 +109,6 @@ fn episode_retained_bytes(episode: &Episode) -> usize {
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Page {
     Home,
-    Explore,
     TopSongs,
     /// The songs of the latest releases from followed artists.
     NewReleases,
@@ -136,7 +135,6 @@ impl Page {
     pub fn encode(&self) -> String {
         match self {
             Page::Home => "home".into(),
-            Page::Explore => "explore".into(),
             Page::TopSongs => "top-songs".into(),
             Page::NewReleases => "new-releases".into(),
             Page::Search => "search".into(),
@@ -160,7 +158,6 @@ impl Page {
     pub fn decode(text: &str) -> Option<Self> {
         Some(match text {
             "home" => Page::Home,
-            "explore" => Page::Explore,
             "top-songs" => Page::TopSongs,
             "new-releases" => Page::NewReleases,
             "search" => Page::Search,
@@ -1524,8 +1521,15 @@ pub enum Action {
     /// in the list.
     DownloadMilkdropPack(usize),
     DownloadTrack(crate::api::models::Track),
+    DownloadUris {
+        label: String,
+        uris: Vec<String>,
+    },
+    DownloadContext {
+        uri: String,
+        label: String,
+    },
     DeleteDownload(String),
-    RefreshExplore,
     RefreshDownloads,
     Quit,
 }

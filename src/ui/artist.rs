@@ -565,6 +565,35 @@ fn artist_actions(app: &mut App, ui: &mut egui::Ui, artist: &Artist) {
         {
             app.actions.push(Action::ToggleSaved(artist.uri.clone()));
         }
+        let top_uris: Vec<String> = app
+            .artist_pages
+            .get(&artist.id)
+            .and_then(|p| p.top_tracks.get())
+            .map(|tracks| tracks.iter().map(|t| t.uri.clone()).collect())
+            .unwrap_or_default();
+        let all_downloaded = app.all_uris_downloaded(&top_uris);
+        let any_downloading = app.any_uri_downloading(&top_uris);
+        let (dl_color, dl_hover, dl_tooltip) = if any_downloading {
+            (
+                palette.accent,
+                palette.accent_hover,
+                gettext(locale, "Downloading…"),
+            )
+        } else if all_downloaded {
+            (
+                palette.accent,
+                palette.accent_hover,
+                gettext(locale, "Downloaded"),
+            )
+        } else {
+            (palette.secondary, palette.text, gettext(locale, "Download"))
+        };
+        if theme::icon_button(ui, Icon::Download, 26.0, dl_color, dl_hover, &dl_tooltip).clicked() {
+            app.actions.push(Action::DownloadContext {
+                uri: artist.uri.clone(),
+                label: artist.name.clone(),
+            });
+        }
         let more = theme::icon_button(
             ui,
             Icon::Ellipsis,

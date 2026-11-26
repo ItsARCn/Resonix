@@ -926,8 +926,9 @@ pub struct App {
     /// The window's pixels per point when it last drew, so artwork chosen
     /// away from the drawing code fits the display it lands on.
     pub pixels_per_point: f32,
-    pub explore_sections: Loadable<Vec<(String, Vec<Track>)>>,
     pub downloads: Loadable<Vec<crate::model::DownloadedTrack>>,
+    pub downloaded_ids: HashSet<String>,
+    pub downloading_ids: HashSet<String>,
 }
 
 /// How many plays the Home shelf asks for: it shows sixteen cards.
@@ -1537,8 +1538,9 @@ impl App {
             winamp: crate::winamp::WinampState::new(session.winamp_pos, tap, eq),
             player_bar_analyser: crate::vis::WideAnalyser::default(),
             pixels_per_point: 1.0,
-            explore_sections: Loadable::NotLoaded,
             downloads: Loadable::NotLoaded,
+            downloaded_ids: HashSet::new(),
+            downloading_ids: HashSet::new(),
         };
         app.local.volume = app.settings.volume;
         if let Some(folder) = app.settings.local_files_folder() {
@@ -3233,19 +3235,36 @@ impl App {
                         }
                     }
                 }
-                Event::DownloadFinished { title, result } => match result {
-                    Ok(()) => {
-                        self.toast(
-                            gettext(self.locale, "Downloaded {name}").replace("{name}", &title),
-                        );
-                        if !matches!(self.downloads, Loadable::NotLoaded) {
-                            self.backend.api(ApiRequest::Downloads);
+                Event::DownloadStarted { track_ids } => {
+                    for id in track_ids {
+                        self.downloading_ids.insert(id);
+                    }
+                }
+                Event::DownloadFinished {
+                    track_id,
+                    title,
+                    result,
+                } => {
+                    if !track_id.is_empty() {
+                        self.downloading_ids.remove(&track_id);
+                    }
+                    match result {
+                        Ok(()) => {
+                            if !track_id.is_empty() {
+                                self.downloaded_ids.insert(track_id);
+                            }
+                            self.toast(
+                                gettext(self.locale, "Downloaded {name}").replace("{name}", &title),
+                            );
+                            if !matches!(self.downloads, Loadable::NotLoaded) {
+                                self.backend.api(ApiRequest::Downloads);
+                            }
+                        }
+                        Err(error) => {
+                            self.toast_error(format!("{title}: {error}"));
                         }
                     }
-                    Err(error) => {
-                        self.toast_error(format!("{title}: {error}"));
-                    }
-                },
+                }
             }
         }
     }
@@ -3444,6 +3463,7 @@ impl App {
                 // account signing in again.
                 self.account_caches_due = true;
                 self.load_playlists();
+                self.backend.api(ApiRequest::Downloads);
                 self.ensure_loaded(self.page().clone());
                 self.poll_remote(true);
             }
@@ -3616,12 +3636,6 @@ impl App {
                     || self.home.refresh_failed;
                 if incomplete {
                     self.load_home(true);
-                }
-            }
-            Page::Explore => {
-                if self.explore_sections.get().is_none() {
-                    self.explore_sections = Loadable::Loading;
-                    self.backend.api(ApiRequest::Explore { force: false });
                 }
             }
             Page::Playlists => {
@@ -6438,12 +6452,6 @@ impl App {
                     self.load_home(self.home.refresh_failed);
                 }
             }
-            Page::Explore => {
-                if self.network_reachable && self.explore_sections.needs_load() {
-                    self.explore_sections = Loadable::Loading;
-                    self.backend.api(ApiRequest::Explore { force: false });
-                }
-            }
             Page::Playlists => {
                 if self.network_reachable && self.library.playlists.needs_load() {
                     self.load_playlists();
@@ -7238,10 +7246,6 @@ impl App {
     fn reload(&mut self, page: Page) {
         match &page {
             Page::Home => self.load_home(true),
-            Page::Explore => {
-                self.explore_sections = Loadable::Loading;
-                self.backend.api(ApiRequest::Explore { force: true });
-            }
             Page::Playlists => self.load_playlists(),
             Page::Downloads => {
                 self.downloads = Loadable::Loading;
@@ -8708,10 +8712,10 @@ impl App {
                     self.home_answered(changed);
                 }
             }
-            ApiResponse::Explore(result) => {
-                self.explore_sections.refresh(result);
-            }
             ApiResponse::Downloads(result) => {
+                if let Ok(list) = &result {
+                    self.sync_downloaded_ids(list);
+                }
                 self.downloads = Loadable::from_result(result);
             }
             ApiResponse::NewReleases { generation, result } => {
@@ -10265,6 +10269,97 @@ impl App {
 
     fn touch_page(&mut self, page: &Page) {
         self.page_used.insert(page.clone(), Instant::now());
+    }
+
+    pub fn is_uri_downloaded(&self, uri: &str) -> bool {
+        uri.strip_prefix("spotify:track:")
+            .is_some_and(|id| self.downloaded_ids.contains(id))
+    }
+
+    pub fn is_uri_downloading(&self, uri: &str) -> bool {
+        uri.strip_prefix("spotify:track:")
+            .is_some_and(|id| self.downloading_ids.contains(id))
+    }
+
+    pub fn all_uris_downloaded(&self, uris: &[String]) -> bool {
+        let mut any_track = false;
+        for uri in uris {
+            if uri.starts_with("spotify:track:") {
+                any_track = true;
+                if !self.is_uri_downloaded(uri) {
+                    return false;
+                }
+            }
+        }
+        any_track
+    }
+
+    pub fn any_uri_downloading(&self, uris: &[String]) -> bool {
+        uris.iter().any(|uri| self.is_uri_downloading(uri))
+    }
+
+    fn sync_downloaded_ids(&mut self, list: &[crate::model::DownloadedTrack]) {
+        self.downloaded_ids.clear();
+        for item in list {
+            if let Some(id) = item
+                .track
+                .id
+                .as_deref()
+                .or_else(|| item.track.uri.strip_prefix("spotify:track:"))
+            {
+                self.downloaded_ids.insert(id.to_string());
+            }
+        }
+    }
+
+    fn resolve_track_for_uri(&mut self, uri: &str) -> Option<Track> {
+        if let Some(id) = uri.strip_prefix("spotify:track:")
+            && let Some(track) = self.read_cached_track(id)
+        {
+            return Some(track);
+        }
+        if let Some(tracks) = self.home.new_release_tracks.get()
+            && let Some(t) = tracks.iter().find(|t| t.uri == uri)
+        {
+            return Some(t.clone());
+        }
+        if let Some(tracks) = self.home.top_songs.get()
+            && let Some(t) = tracks.iter().find(|t| t.uri == uri)
+        {
+            return Some(t.clone());
+        }
+        for page in self.radio_pages.values() {
+            if let Some(tracks) = page.songs.get()
+                && let Some(t) = tracks.iter().find(|t| t.uri == uri)
+            {
+                return Some(t.clone());
+            }
+        }
+        if let Some(saved) = self.library.liked.items.iter().find(|s| s.track.uri == uri) {
+            return Some(saved.track.clone());
+        }
+        for page in self.album_pages.values() {
+            if let Some(t) = page.tracks.items.iter().find(|t| t.uri == uri) {
+                return Some(t.clone());
+            }
+        }
+        for page in self.playlist_pages.values() {
+            for item in &page.items.items {
+                if let Some(PlayableItem::Track(t)) = item.playable()
+                    && t.uri == uri
+                {
+                    return Some(t.clone());
+                }
+            }
+        }
+        for page in self.artist_pages.values() {
+            if let Some(tracks) = page.top_tracks.get()
+                && let Some(t) = tracks.iter().find(|t| t.uri == uri)
+            {
+                return Some(t.clone());
+            }
+        }
+        None
     }
 
     fn read_cached_track(&mut self, id: &str) -> Option<Track> {
@@ -14294,15 +14389,125 @@ impl App {
             }
             Action::DownloadTrack(track) => {
                 let name = track.name.clone();
+                let vid = track
+                    .id
+                    .clone()
+                    .or_else(|| track.uri.strip_prefix("spotify:track:").map(str::to_string));
+                if let Some(id) = &vid {
+                    if self.downloaded_ids.contains(id) {
+                        self.toast(gettext(self.locale, "Downloaded"));
+                        return;
+                    }
+                    if self.downloading_ids.contains(id) {
+                        return;
+                    }
+                    self.downloading_ids.insert(id.clone());
+                }
                 self.backend.send(Command::DownloadTrack(track));
                 self.toast(gettext(self.locale, "Downloading {name}").replace("{name}", &name));
             }
-            Action::DeleteDownload(id) => {
-                self.backend.send(Command::DeleteDownload(id));
+            Action::DownloadUris { label, uris } => {
+                let mut tracks = Vec::new();
+                let mut missing_uris = Vec::new();
+                let mut seen = HashSet::new();
+                for uri in uris {
+                    if !uri.starts_with("spotify:track:") || !seen.insert(uri.clone()) {
+                        continue;
+                    }
+                    if self.is_uri_downloaded(&uri) || self.is_uri_downloading(&uri) {
+                        continue;
+                    }
+                    if let Some(id) = uri.strip_prefix("spotify:track:") {
+                        self.downloading_ids.insert(id.to_string());
+                    }
+                    if let Some(track) = self.resolve_track_for_uri(&uri) {
+                        tracks.push(track);
+                    } else {
+                        missing_uris.push(uri);
+                    }
+                }
+                if tracks.is_empty() && missing_uris.is_empty() {
+                    self.toast(gettext(self.locale, "Downloaded"));
+                    return;
+                }
+                if !tracks.is_empty() {
+                    self.backend.send(Command::DownloadTracks(tracks));
+                }
+                if !missing_uris.is_empty() {
+                    self.backend.send(Command::DownloadUris(missing_uris));
+                }
+                self.toast(gettext(self.locale, "Downloading {name}").replace("{name}", &label));
             }
-            Action::RefreshExplore => {
-                self.explore_sections = Loadable::Loading;
-                self.backend.api(ApiRequest::Explore { force: true });
+            Action::DownloadContext { uri, label } => {
+                if let Some(id) = uri.strip_prefix("spotify:playlist:")
+                    && let Some(page) = self.playlist_pages.get(id)
+                {
+                    for item in &page.items.items {
+                        if let Some(PlayableItem::Track(t)) = item.playable()
+                            && let Some(vid) =
+                                t.id.as_deref()
+                                    .or_else(|| t.uri.strip_prefix("spotify:track:"))
+                            && !self.downloaded_ids.contains(vid)
+                        {
+                            self.downloading_ids.insert(vid.to_string());
+                        }
+                    }
+                } else if let Some(id) = uri.strip_prefix("spotify:album:")
+                    && let Some(page) = self.album_pages.get(id)
+                {
+                    for t in &page.tracks.items {
+                        if let Some(vid) =
+                            t.id.as_deref()
+                                .or_else(|| t.uri.strip_prefix("spotify:track:"))
+                            && !self.downloaded_ids.contains(vid)
+                        {
+                            self.downloading_ids.insert(vid.to_string());
+                        }
+                    }
+                } else if let Some(id) = uri.strip_prefix("spotify:artist:")
+                    && let Some(page) = self.artist_pages.get(id)
+                    && let Some(tracks) = page.top_tracks.get()
+                {
+                    for t in tracks {
+                        if let Some(vid) =
+                            t.id.as_deref()
+                                .or_else(|| t.uri.strip_prefix("spotify:track:"))
+                            && !self.downloaded_ids.contains(vid)
+                        {
+                            self.downloading_ids.insert(vid.to_string());
+                        }
+                    }
+                } else if uri.ends_with(":collection") {
+                    for s in &self.library.liked.items {
+                        if let Some(vid) = s
+                            .track
+                            .id
+                            .as_deref()
+                            .or_else(|| s.track.uri.strip_prefix("spotify:track:"))
+                            && !self.downloaded_ids.contains(vid)
+                        {
+                            self.downloading_ids.insert(vid.to_string());
+                        }
+                    }
+                }
+                self.backend.send(Command::DownloadContext {
+                    uri,
+                    label: label.clone(),
+                });
+                self.toast(gettext(self.locale, "Downloading {name}").replace("{name}", &label));
+            }
+            Action::DeleteDownload(id) => {
+                self.downloaded_ids.remove(&id);
+                if let Loadable::Loaded(list) = &mut self.downloads {
+                    list.retain(|d| {
+                        d.track
+                            .id
+                            .as_deref()
+                            .or_else(|| d.track.uri.strip_prefix("spotify:track:"))
+                            != Some(id.as_str())
+                    });
+                }
+                self.backend.send(Command::DeleteDownload(id));
             }
             Action::RefreshDownloads => {
                 self.downloads = Loadable::Loading;

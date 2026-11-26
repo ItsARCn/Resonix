@@ -7,7 +7,6 @@ pub mod collection;
 pub(crate) mod devices;
 mod dialogs;
 pub mod downloads;
-pub mod explore;
 pub(crate) mod friends;
 pub mod home;
 mod keys;
@@ -315,7 +314,6 @@ fn central(app: &mut App, ui: &mut egui::Ui) {
             let overview = matches!(
                 page,
                 Page::Home
-                    | Page::Explore
                     | Page::Search
                     | Page::Playlists
                     | Page::Downloads
@@ -373,7 +371,6 @@ fn central(app: &mut App, ui: &mut egui::Ui) {
                         ui.set_min_width(ui.available_width());
                         match page {
                             Page::Home => home::show(app, ui),
-                            Page::Explore => explore::show(app, ui),
                             Page::TopSongs => collection::top_songs(app, ui),
                             Page::NewReleases => new_releases::page(app, ui),
                             Page::Search => search::show(app, ui),

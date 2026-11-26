@@ -150,6 +150,35 @@ pub fn page(app: &mut App, ui: &mut egui::Ui) {
         {
             app.actions.push(Action::SetShuffle(!shuffle));
         }
+        let all_downloaded = app.all_uris_downloaded(&uris);
+        let any_downloading = app.any_uri_downloading(&uris);
+        let (dl_color, dl_hover, dl_tooltip) = if any_downloading {
+            (
+                palette.accent,
+                palette.accent_hover,
+                gettext(locale, "Downloading…"),
+            )
+        } else if all_downloaded {
+            (
+                palette.accent,
+                palette.accent_hover,
+                gettext(locale, "Downloaded"),
+            )
+        } else {
+            (palette.secondary, palette.text, gettext(locale, "Download"))
+        };
+        if ui
+            .add_enabled_ui(!uris.is_empty(), |ui| {
+                theme::icon_button(ui, Icon::Download, 26.0, dl_color, dl_hover, &dl_tooltip)
+            })
+            .inner
+            .clicked()
+        {
+            app.actions.push(Action::DownloadUris {
+                label: gettext(locale, "New releases").into_owned(),
+                uris: uris.to_vec(),
+            });
+        }
         theme::text(
             ui,
             songs_and_duration(locale, count, duration),

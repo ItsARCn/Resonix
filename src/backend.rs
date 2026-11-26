@@ -108,9 +108,6 @@ pub enum ApiRequest {
         generation: u64,
         force: bool,
     },
-    Explore {
-        force: bool,
-    },
     Downloads,
     NewReleases {
         generation: u64,
@@ -342,7 +339,6 @@ pub enum ApiResponse {
         result: ApiResult<Vec<Playlist>>,
         top_mixes: ApiResult<Vec<Playlist>>,
     },
-    Explore(ApiResult<Vec<(String, Vec<Track>)>>),
     Downloads(ApiResult<Vec<crate::model::DownloadedTrack>>),
     NewReleases {
         generation: u64,
@@ -692,6 +688,12 @@ pub enum Command {
         generation: u64,
     },
     DownloadTrack(Track),
+    DownloadTracks(Vec<Track>),
+    DownloadUris(Vec<String>),
+    DownloadContext {
+        uri: String,
+        label: String,
+    },
     DeleteDownload(String),
 }
 
@@ -824,7 +826,11 @@ pub enum Event {
         generation: u64,
         result: Result<(), String>,
     },
+    DownloadStarted {
+        track_ids: Vec<String>,
+    },
     DownloadFinished {
+        track_id: String,
         title: String,
         result: Result<(), String>,
     },
@@ -1489,6 +1495,82 @@ fn strip_html_tags(s: &str) -> String {
     out.trim().to_string()
 }
 
+fn yt_track_from_spotify(track: &Track) -> Option<YtTrack> {
+    let vid = track
+        .id
+        .clone()
+        .or_else(|| video_id_from_uri(&track.uri).map(str::to_string))?;
+    Some(YtTrack {
+        id: vid,
+        title: track.name.clone(),
+        artist: crate::api::models::join_names(track.artists.iter().map(|a| a.name.as_str())),
+        thumbnail: track
+            .album
+            .as_ref()
+            .and_then(|a| a.images.first())
+            .map(|img| img.url.clone())
+            .unwrap_or_default(),
+        duration_secs: f64::from(track.duration_ms) / 1000.0,
+        stream_url: None,
+    })
+}
+
+fn spawn_yt_downloads(
+    downloads: Arc<DownloadManager>,
+    db: Arc<SearchCache>,
+    events: std::sync::mpsc::Sender<Event>,
+    waker: Waker,
+    yt_tracks: Vec<YtTrack>,
+) {
+    let mut seen = std::collections::HashSet::new();
+    let mut queued = Vec::new();
+    for track in yt_tracks {
+        if track.id.is_empty() || !seen.insert(track.id.clone()) {
+            continue;
+        }
+        if downloads.is_active(&track.id) {
+            continue;
+        }
+        queued.push(track);
+    }
+    if queued.is_empty() {
+        return;
+    }
+    let track_ids: Vec<String> = queued.iter().map(|t| t.id.clone()).collect();
+    let _ = events.send(Event::DownloadStarted { track_ids });
+    waker.wake();
+
+    for yt_track in queued {
+        let downloads = Arc::clone(&downloads);
+        let db = Arc::clone(&db);
+        let events = events.clone();
+        let waker = waker.clone();
+        let track_id = yt_track.id.clone();
+        let title = yt_track.title.clone();
+        tokio::spawn(async move {
+            match downloads.download(&db, &yt_track, |_| {}).await {
+                Ok(true) => {
+                    let _ = events.send(Event::DownloadFinished {
+                        track_id,
+                        title,
+                        result: Ok(()),
+                    });
+                    waker.wake();
+                }
+                Ok(false) => {}
+                Err(err) => {
+                    let _ = events.send(Event::DownloadFinished {
+                        track_id,
+                        title,
+                        result: Err(err),
+                    });
+                    waker.wake();
+                }
+            }
+        });
+    }
+}
+
 struct BusyGuard(Arc<NetActivity>);
 
 impl BusyGuard {
@@ -1966,37 +2048,141 @@ impl Worker {
                     }
                 }
                 Command::DownloadTrack(track) => {
-                    if let Some(vid) = track
-                        .id
-                        .clone()
-                        .or_else(|| video_id_from_uri(&track.uri).map(str::to_string))
-                    {
-                        let yt_track = YtTrack {
-                            id: vid.clone(),
-                            title: track.name.clone(),
-                            artist: crate::api::models::join_names(
-                                track.artists.iter().map(|a| a.name.as_str()),
-                            ),
-                            thumbnail: track
-                                .album
-                                .as_ref()
-                                .and_then(|a| a.images.first())
-                                .map(|img| img.url.clone())
-                                .unwrap_or_default(),
-                            duration_secs: f64::from(track.duration_ms) / 1000.0,
-                            stream_url: None,
-                        };
-                        let downloads = Arc::clone(&self.downloads);
-                        let db = Arc::clone(&self.db);
-                        let events = self.events.clone();
-                        let waker = self.waker.clone();
-                        let title = yt_track.title.clone();
-                        tokio::spawn(async move {
-                            let res = downloads.download(&db, &yt_track, |_| {}).await;
-                            let _ = events.send(Event::DownloadFinished { title, result: res });
-                            waker.wake();
-                        });
+                    if let Some(yt_track) = yt_track_from_spotify(&track) {
+                        spawn_yt_downloads(
+                            Arc::clone(&self.downloads),
+                            Arc::clone(&self.db),
+                            self.events.clone(),
+                            self.waker.clone(),
+                            vec![yt_track],
+                        );
                     }
+                }
+                Command::DownloadTracks(tracks) => {
+                    let yt_tracks: Vec<YtTrack> =
+                        tracks.iter().filter_map(yt_track_from_spotify).collect();
+                    spawn_yt_downloads(
+                        Arc::clone(&self.downloads),
+                        Arc::clone(&self.db),
+                        self.events.clone(),
+                        self.waker.clone(),
+                        yt_tracks,
+                    );
+                }
+                Command::DownloadUris(uris) => {
+                    let downloads = Arc::clone(&self.downloads);
+                    let db = Arc::clone(&self.db);
+                    let extractor = Arc::clone(&self.extractor);
+                    let events = self.events.clone();
+                    let waker = self.waker.clone();
+                    tokio::spawn(async move {
+                        let mut yt_tracks = Vec::new();
+                        for uri in uris {
+                            if let Some(vid) = video_id_from_uri(&uri) {
+                                if let Ok(Some(t)) = db.get_track_by_id(vid) {
+                                    yt_tracks.push(t);
+                                } else if let Ok(t) = extractor.metadata(vid).await {
+                                    let _ = db.upsert_tracks(std::slice::from_ref(&t));
+                                    yt_tracks.push(t);
+                                }
+                            }
+                        }
+                        spawn_yt_downloads(downloads, db, events, waker, yt_tracks);
+                    });
+                }
+                Command::DownloadContext { uri, label } => {
+                    let downloads = Arc::clone(&self.downloads);
+                    let db = Arc::clone(&self.db);
+                    let extractor = Arc::clone(&self.extractor);
+                    let explore_cache = Arc::clone(&self.explore_cache);
+                    let events = self.events.clone();
+                    let waker = self.waker.clone();
+                    tokio::spawn(async move {
+                        let resolved: Result<Vec<YtTrack>, String> = if let Some(id) =
+                            uri.strip_prefix("spotify:playlist:")
+                        {
+                            let cached = explore_cache
+                                .lock()
+                                .unwrap_or_else(|p| p.into_inner())
+                                .get(id)
+                                .cloned();
+                            if let Some(tracks) = cached {
+                                Ok(tracks)
+                            } else if let Ok(pid) = id.parse::<i64>() {
+                                let db2 = Arc::clone(&db);
+                                tokio::task::spawn_blocking(move || db2.get_playlist_tracks(pid))
+                                    .await
+                                    .map_err(|e| e.to_string())
+                                    .and_then(|r| r.map_err(|e| e.to_string()))
+                            } else {
+                                Ok(Vec::new())
+                            }
+                        } else if let Some(id) = uri.strip_prefix("spotify:album:") {
+                            let vid = id.strip_prefix("yt_").unwrap_or(id).to_string();
+                            let db2 = Arc::clone(&db);
+                            let vid2 = vid.clone();
+                            let existing =
+                                tokio::task::spawn_blocking(move || db2.get_track_by_id(&vid2))
+                                    .await
+                                    .ok()
+                                    .and_then(|r| r.ok())
+                                    .flatten();
+                            match existing {
+                                Some(t) => Ok(vec![t]),
+                                None => match extractor.metadata(&vid).await {
+                                    Ok(t) => {
+                                        let _ = db.upsert_tracks(std::slice::from_ref(&t));
+                                        Ok(vec![t])
+                                    }
+                                    Err(e) => Err(e.to_string()),
+                                },
+                            }
+                        } else if let Some(id) = uri.strip_prefix("spotify:artist:") {
+                            let name = decode_artist_id(id).unwrap_or_else(|| id.to_string());
+                            extractor
+                                .search_youtube(&name, 20)
+                                .await
+                                .map(|tracks| {
+                                    let _ = db.upsert_tracks(&tracks);
+                                    tracks.into_iter().take(20).collect()
+                                })
+                                .map_err(|e| e.to_string())
+                        } else if uri.ends_with(":collection") {
+                            let db2 = Arc::clone(&db);
+                            tokio::task::spawn_blocking(move || {
+                                db2.liked_tracks(0, 10_000).map(|(tracks, _)| tracks)
+                            })
+                            .await
+                            .map_err(|e| e.to_string())
+                            .and_then(|r| r.map_err(|e| e.to_string()))
+                        } else if let Some(vid) = video_id_from_uri(&uri) {
+                            match db.get_track_by_id(vid).ok().flatten() {
+                                Some(t) => Ok(vec![t]),
+                                None => match extractor.metadata(vid).await {
+                                    Ok(t) => {
+                                        let _ = db.upsert_tracks(std::slice::from_ref(&t));
+                                        Ok(vec![t])
+                                    }
+                                    Err(e) => Err(e.to_string()),
+                                },
+                            }
+                        } else {
+                            Ok(Vec::new())
+                        };
+                        match resolved {
+                            Ok(yt_tracks) => {
+                                spawn_yt_downloads(downloads, db, events, waker, yt_tracks);
+                            }
+                            Err(e) => {
+                                let _ = events.send(Event::DownloadFinished {
+                                    track_id: String::new(),
+                                    title: label,
+                                    result: Err(e),
+                                });
+                                waker.wake();
+                            }
+                        }
+                    });
                 }
                 Command::DeleteDownload(vid) => {
                     let downloads = Arc::clone(&self.downloads);
@@ -2883,43 +3069,6 @@ impl Worker {
                         result: Ok(playlists),
                         top_mixes: Ok(Vec::new()),
                     }
-                }
-
-                ApiRequest::Explore { force } => {
-                    let cached_sections = (!force)
-                        .then(|| {
-                            explore_sections
-                                .lock()
-                                .unwrap_or_else(|p| p.into_inner())
-                                .clone()
-                        })
-                        .filter(|s| !s.is_empty());
-                    let sections: Vec<crate::youtube::ExploreSection> = match cached_sections {
-                        Some(s) => s
-                            .into_iter()
-                            .map(|(title, tracks)| crate::youtube::ExploreSection { title, tracks })
-                            .collect(),
-                        None => explore::build_explore(&db, &extractor)
-                            .await
-                            .unwrap_or_default(),
-                    };
-                    {
-                        let mut cache = explore_cache.lock().unwrap_or_else(|p| p.into_inner());
-                        let mut titles = explore_titles.lock().unwrap_or_else(|p| p.into_inner());
-                        let mut sec_cache =
-                            explore_sections.lock().unwrap_or_else(|p| p.into_inner());
-                        let _ = build_explore_playlists(
-                            &sections,
-                            &mut cache,
-                            &mut titles,
-                            &mut sec_cache,
-                        );
-                    }
-                    let converted: Vec<(String, Vec<Track>)> = sections
-                        .into_iter()
-                        .map(|s| (s.title, s.tracks.iter().map(to_spotify_track).collect()))
-                        .collect();
-                    ApiResponse::Explore(Ok(converted))
                 }
 
                 ApiRequest::Downloads => {

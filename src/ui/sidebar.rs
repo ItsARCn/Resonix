@@ -1063,17 +1063,6 @@ fn contents(app: &mut App, ui: &mut egui::Ui, grid_art: Option<Rect>) {
     if nav_row(
         ui,
         &palette,
-        Icon::Compass,
-        &gettext(locale, "Explore"),
-        page == Page::Explore,
-    )
-    .clicked()
-    {
-        app.actions.push(Action::Open(Page::Explore));
-    }
-    if nav_row(
-        ui,
-        &palette,
         Icon::ListMusic,
         &gettext(locale, "Queue"),
         page == Page::Queue,

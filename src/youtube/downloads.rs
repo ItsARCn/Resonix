@@ -43,6 +43,13 @@ impl DownloadManager {
         self.dir.join(format!("{track_id}.mp3"))
     }
 
+    pub fn is_active(&self, track_id: &str) -> bool {
+        self.active
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .contains(track_id)
+    }
+
     fn try_begin(&self, track_id: &str) -> bool {
         self.active
             .lock()
@@ -62,7 +69,7 @@ impl DownloadManager {
         db: &SearchCache,
         track: &YtTrack,
         mut on_progress: impl FnMut(DownloadProgress),
-    ) -> Result<(), String> {
+    ) -> Result<bool, String> {
         let track_id = track.id.clone();
         let path = self.path_for(&track_id);
 
@@ -75,11 +82,11 @@ impl DownloadManager {
                 status: "done".into(),
                 percent: 100.0,
             });
-            return Ok(());
+            return Ok(true);
         }
 
         if !self.try_begin(&track_id) {
-            return Ok(());
+            return Ok(false);
         }
 
         let _ = db.upsert_tracks(std::slice::from_ref(track));
@@ -106,7 +113,7 @@ impl DownloadManager {
                     status: "done".into(),
                     percent: 100.0,
                 });
-                Ok(())
+                Ok(true)
             }
             Err(e) => {
                 cleanup_partials(&self.dir, &track_id);
