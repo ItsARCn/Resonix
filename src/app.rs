@@ -17519,23 +17519,23 @@ mod tests {
     fn choosing_the_custom_title_bar_recreates_only_the_main_window() {
         let mut app = headless_app();
         let ctx = egui::Context::default();
+        app.apply(Action::SetCustomTitlebar(false), &ctx);
+        assert!(!app.settings.custom_titlebar);
+        assert!(app.switch_intent, "the main window is replaced");
+        assert!(!fastframe_titlebar::enabled());
+
+        app.switch_intent = false;
+        app.apply(Action::SetCustomTitlebar(false), &ctx);
+        assert!(!app.switch_intent, "an unchanged choice keeps the window");
+
+        app.settings.winamp_window = true;
         app.apply(Action::SetCustomTitlebar(true), &ctx);
         assert!(app.settings.custom_titlebar);
-        assert!(app.switch_intent, "the main window is replaced");
+        assert!(!app.switch_intent, "the mini player is not the main window");
         assert_eq!(
             fastframe_titlebar::enabled(),
             cfg!(any(windows, target_os = "linux"))
         );
-
-        app.switch_intent = false;
-        app.apply(Action::SetCustomTitlebar(true), &ctx);
-        assert!(!app.switch_intent, "an unchanged choice keeps the window");
-
-        app.settings.winamp_window = true;
-        app.apply(Action::SetCustomTitlebar(false), &ctx);
-        assert!(!app.settings.custom_titlebar);
-        assert!(!app.switch_intent, "the mini player is not the main window");
-        assert!(!fastframe_titlebar::enabled());
     }
 
     /// Q in lyrics fullscreen flips the queue column without leaving

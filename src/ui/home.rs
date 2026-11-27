@@ -49,14 +49,14 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
     ui.add_space(16.0);
 
     if app.settings.home.made_for_you.visible {
-        made_for_you(app, ui);
-        top_mixes(app, ui);
+        ui.push_id("home-made-for-you", |ui| made_for_you(app, ui));
+        ui.push_id("home-top-mixes", |ui| top_mixes(app, ui));
     }
-    recently_played(app, ui);
-    top_artists(app, ui);
-    top_tracks(app, ui);
+    ui.push_id("home-recently-played", |ui| recently_played(app, ui));
+    ui.push_id("home-top-artists", |ui| top_artists(app, ui));
+    ui.push_id("home-top-tracks", |ui| top_tracks(app, ui));
     if app.settings.home.recommendations.visible {
-        recommendations(app, ui);
+        ui.push_id("home-recommendations", |ui| recommendations(app, ui));
     }
 }
 
@@ -1058,5 +1058,72 @@ mod tests {
         let shelf = podcast_episodes(&podcasts, |show| show.id == "s0", today());
         assert_eq!(shelf.len(), PODCAST_CARDS);
         assert!(!ids(&shelf).contains(&"s0-e"));
+    }
+
+    #[cfg(feature = "demo")]
+    #[test]
+    fn duplicate_songs_across_home_sections_do_not_clash_widget_ids() {
+        let root = std::env::temp_dir().join(format!("resonix-home-ids-{}", std::process::id()));
+        let ctx = egui::Context::default();
+        let waker = crate::backend::Waker::default();
+        waker.attach(&ctx);
+        let mut app = App::new(
+            &waker,
+            crate::paths::AppDirs {
+                config: root.join("config"),
+                state: root.join("state"),
+                cache: root.join("cache"),
+            },
+            crate::settings::Settings::default(),
+            crate::app::AppOptions {
+                media_controls: false,
+                restore_sign_in: false,
+                tray: false,
+                autostart: false,
+            },
+        );
+        app.attach(&ctx);
+        crate::demo::populate(&mut app);
+        let shared = app
+            .home
+            .top_tracks
+            .get()
+            .expect("demo top tracks")
+            .first()
+            .cloned()
+            .expect("at least one top track");
+        app.home.recommendations = Loadable::Loaded(vec![shared]);
+
+        ctx.options_mut(|options| options.warn_on_id_clash = true);
+        let mut clashes = Vec::new();
+        for _ in 0..2 {
+            let mut output = ctx.run_ui(
+                egui::RawInput {
+                    screen_rect: Some(egui::Rect::from_min_size(
+                        egui::Pos2::ZERO,
+                        egui::vec2(1000.0, 1200.0),
+                    )),
+                    ..Default::default()
+                },
+                |ui| {
+                    egui::ScrollArea::vertical().show(ui, |ui| super::show(&mut app, ui));
+                },
+            );
+            for shape in &output.shapes {
+                if let egui::epaint::Shape::Text(text) = &shape.shape {
+                    let s = text.galley.text();
+                    if s.contains("widget ID") {
+                        clashes.push(s.to_owned());
+                    }
+                }
+            }
+            output.textures_delta.clear();
+        }
+        app.backend.shutdown();
+        let _ = std::fs::remove_dir_all(&root);
+        assert!(
+            clashes.is_empty(),
+            "unexpected egui ID clashes: {clashes:?}"
+        );
     }
 }

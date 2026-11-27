@@ -72,8 +72,8 @@
     <Launch Condition="Installed OR NOT WINDOWSBUILD OR WINDOWSBUILD &gt;= 10240"
       Message="[ProductName] needs Windows 10 or later." />
 
-    <Icon Id="spotifast.ico" SourceFile="$(Icon)" />
-    <Property Id="ARPPRODUCTICON" Value="spotifast.ico" />
+    <Icon Id="resonix.ico" SourceFile="$(Icon)" />
+    <Property Id="ARPPRODUCTICON" Value="resonix.ico" />
     <Property Id="ARPURLINFOABOUT" Value="https://spotifast.rocks" />
     <Property Id="ARPHELPLINK" Value="https://github.com/crmne/spotifast/issues" />
     <Property Id="ARPURLUPDATEINFO" Value="https://spotifast.rocks/download/" />

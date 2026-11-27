@@ -82,7 +82,7 @@ package() {
   install -Dm644 "README.md" "${pkgdir}/usr/share/doc/${pkgname}/README.md"
   install -Dm644 "packaging/applications/spotifast.desktop" \
     "${pkgdir}/usr/share/applications/spotifast.desktop"
-  install -Dm644 "packaging/icons/spotifast.svg" \
+  install -Dm644 "packaging/icons/resonix.svg" \
     "${pkgdir}/usr/share/icons/hicolor/scalable/apps/spotifast.svg"
   install -Dm644 contrib/omarchy/spotifast.json.tpl "${pkgdir}/usr/share/spotifast/omarchy/spotifast.json.tpl"
   install -Dm755 contrib/omarchy/spotifast-theme "${pkgdir}/usr/share/spotifast/omarchy/spotifast-theme"

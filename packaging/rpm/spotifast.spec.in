@@ -78,7 +78,7 @@ cargo build --frozen --release
 %install
 install -Dpm0755 target/release/spotifast %{buildroot}%{_bindir}/spotifast
 install -Dpm0644 packaging/applications/spotifast.desktop %{buildroot}%{_datadir}/applications/spotifast.desktop
-install -Dpm0644 packaging/icons/spotifast.svg %{buildroot}%{_datadir}/icons/hicolor/scalable/apps/spotifast.svg
+install -Dpm0644 packaging/icons/resonix.svg %{buildroot}%{_datadir}/icons/hicolor/scalable/apps/spotifast.svg
 install -Dpm0644 contrib/omarchy/spotifast.json.tpl %{buildroot}%{_datadir}/spotifast/omarchy/spotifast.json.tpl
 install -Dpm0755 contrib/omarchy/spotifast-theme %{buildroot}%{_datadir}/spotifast/omarchy/spotifast-theme
 

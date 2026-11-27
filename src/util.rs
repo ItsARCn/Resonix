@@ -249,8 +249,8 @@ pub fn open_youtube_url(uri: &str) -> Option<String> {
 pub fn tray_template_rgba(size: usize) -> Vec<u8> {
     let mut rgba = mark_rgba(size, false);
     for pixel in rgba.as_chunks_mut::<4>().0 {
-        // The triangle is the dark colour; make it a hole instead.
-        if pixel[1] < 128 {
+        // The triangle is white; punch it out so only the disc stays opaque.
+        if pixel[1] >= 128 {
             pixel[3] = 0;
         }
         pixel[0] = 0;
@@ -295,13 +295,13 @@ fn triangle_distance(p: (f32, f32), a: (f32, f32), b: (f32, f32), c: (f32, f32))
     if inside { 0.0 } else { d1.min(d2).min(d3) }
 }
 
-/// The mark on a 128-unit square, as `packaging/icons/spotifast.svg` draws
-/// it: a disc of radius 62 and a play triangle with corners rounded by 5,
-/// set a little left of its box so it looks centred. `polished` adds the
-/// darker rim, the lit face and the bright edge between them.
+/// The mark on a 128-unit square, matching `packaging/icons/resonix.svg`:
+/// a red disc of radius 62 and a white play triangle with corners rounded
+/// by 5, set a little left of its box so it looks centred. `polished` adds
+/// the darker rim, the lit face and the bright edge between them.
 fn mark_rgba(size: usize, polished: bool) -> Vec<u8> {
-    const GREEN: [f32; 3] = [30.0, 215.0, 96.0];
-    const INK: [f32; 3] = [11.0, 14.0, 12.0];
+    const CRIMSON: [f32; 3] = [255.0, 20.0, 51.0];
+    const WHITE: [f32; 3] = [255.0, 255.0, 255.0];
     let mut rgba = vec![0u8; size * size * 4];
     // The disc keeps two pixels of margin, so its edge is never clipped.
     let unit = (size as f32 / 2.0 - 2.0) / 62.0;
@@ -317,12 +317,12 @@ fn mark_rgba(size: usize, polished: bool) -> Vec<u8> {
                 continue;
             }
             let mut colour = if polished {
-                let rim = mix([24.0, 192.0, 85.0], [12.0, 138.0, 58.0], (v - 2.0) / 124.0);
+                let rim = mix([220.0, 26.0, 48.0], [150.0, 8.0, 26.0], (v - 2.0) / 124.0);
                 let lit = (v - 8.0) / 112.0;
                 let face = if lit < 0.55 {
-                    mix([92.0, 240.0, 149.0], GREEN, lit / 0.55)
+                    mix([255.0, 107.0, 122.0], CRIMSON, lit / 0.55)
                 } else {
-                    mix(GREEN, [21.0, 182.0, 80.0], (lit - 0.55) / 0.45)
+                    mix(CRIMSON, [207.0, 12.0, 38.0], (lit - 0.55) / 0.45)
                 };
                 let on_face = ((54.4 - distance) * unit + 0.5).clamp(0.0, 1.0);
                 let mut colour = mix(rim, face, on_face);
@@ -330,18 +330,24 @@ fn mark_rgba(size: usize, polished: bool) -> Vec<u8> {
                 // the top, shaded at the bottom.
                 let edge = (1.0 - (distance - 55.0).abs() / 0.9).clamp(0.0, 1.0);
                 let (tone, strength) = if lit < 0.5 {
-                    ([217.0, 255.0, 232.0], 1.0 - 1.3 * lit)
+                    ([255.0, 217.0, 223.0], 1.0 - 1.3 * lit)
                 } else {
-                    ([10.0, 110.0, 46.0], 0.35 + 1.1 * (lit - 0.5))
+                    ([120.0, 5.0, 20.0], 0.35 + 1.1 * (lit - 0.5))
                 };
                 colour = mix(colour, tone, edge * strength.clamp(0.0, 1.0));
                 colour
             } else {
-                GREEN
+                CRIMSON
             };
+            if polished {
+                let shadow_dist =
+                    triangle_distance((u, v - 1.6), (49.2, 43.5), (49.2, 84.5), (86.1, 64.0));
+                let shadow = ((6.8 - shadow_dist) * unit * 0.4).clamp(0.0, 1.0) * 0.20;
+                colour = mix(colour, [0.0, 0.0, 0.0], shadow);
+            }
             let triangle = triangle_distance((u, v), (49.2, 43.5), (49.2, 84.5), (86.1, 64.0));
             let glyph = ((5.0 - triangle) * unit + 0.5).clamp(0.0, 1.0);
-            colour = mix(colour, INK, glyph);
+            colour = mix(colour, WHITE, glyph);
             let index = (y * size + x) * 4;
             rgba[index] = colour[0].round() as u8;
             rgba[index + 1] = colour[1].round() as u8;
@@ -490,6 +496,7 @@ mod tests {
     /// template keeps its punched-out triangle.
     #[test]
     fn the_icon_is_polished_at_every_size() {
+        let luma = |px: [u8; 4]| u16::from(px[0]) + u16::from(px[1]) + u16::from(px[2]);
         // #given the icon at a dock size and at a tray size
         let (large, small) = (app_icon_rgba(128), app_icon_rgba(32));
 
@@ -497,18 +504,21 @@ mod tests {
         let rim = pixel(&large, 128, 64, 6);
         let face = pixel(&large, 128, 64, 20);
         assert!(
-            face[1] > rim[1],
+            luma(face) > luma(rim),
             "face {face:?} should be lighter than rim {rim:?}"
         );
-        assert!(pixel(&small, 32, 16, 6)[1] > pixel(&small, 32, 16, 2)[1]);
+        assert!(luma(pixel(&small, 32, 16, 6)) > luma(pixel(&small, 32, 16, 2)));
         // #and a lit top fading to a deeper bottom
         let low = pixel(&large, 128, 64, 108);
-        assert!(face[1] > low[1]);
+        assert!(luma(face) > luma(low));
 
-        // #and both carry the dark triangle, a little right of centre
+        // #and both carry the white triangle, a little right of centre
         for (icon, size) in [(&large, 128), (&small, 32)] {
             let centre = pixel(icon, size, size / 2 + size / 16, size / 2);
-            assert!(centre[1] < 40, "triangle missing at {size}: {centre:?}");
+            assert!(
+                centre[0] > 200 && centre[1] > 200 && centre[2] > 200,
+                "triangle missing at {size}: {centre:?}"
+            );
         }
 
         // #and the corners stay clear

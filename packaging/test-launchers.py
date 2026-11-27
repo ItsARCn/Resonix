@@ -28,7 +28,7 @@ def payload(root):
     (root / "packaging/icons").mkdir(parents=True)
     shutil.copyfile(ROOT / "packaging/applications/spotifast.desktop",
                     root / "packaging/applications/spotifast.desktop")
-    shutil.copyfile(ROOT / "packaging/icons/spotifast.svg", root / "packaging/icons/spotifast.svg")
+    shutil.copyfile(ROOT / "packaging/icons/resonix.svg", root / "packaging/icons/resonix.svg")
     (root / "target/release").mkdir(parents=True)
     for name in ["spotifast", "target/release/spotifast"]:
         shutil.copyfile(shutil.which("true"), root / name)
@@ -65,7 +65,7 @@ class LauncherInstallTest(unittest.TestCase):
         self.assertIn("x-scheme-handler/spotify;", entry["MimeType"])
         icons = list((prefix / "share/icons/hicolor/scalable/apps").glob("*.svg"))
         self.assertEqual([p.name for p in icons], [icon + ".svg"])
-        self.assertEqual(icons[0].read_bytes(), (ROOT / "packaging/icons/spotifast.svg").read_bytes())
+        self.assertEqual(icons[0].read_bytes(), (ROOT / "packaging/icons/resonix.svg").read_bytes())
         self.assertFalse((prefix / "bin/spotifast").is_symlink())
         self.assertTrue((prefix / "bin/spotifast").is_file())
         self.assertEqual([p.name for p in (prefix / "bin").iterdir()], ["spotifast"])

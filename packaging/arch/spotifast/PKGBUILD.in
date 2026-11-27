@@ -72,7 +72,7 @@ package() {
   install -Dm644 "README.md" "${pkgdir}/usr/share/doc/${pkgname}/README.md"
   install -Dm644 "packaging/applications/spotifast.desktop" \
     "${pkgdir}/usr/share/applications/spotifast.desktop"
-  install -Dm644 "packaging/icons/spotifast.svg" \
+  install -Dm644 "packaging/icons/resonix.svg" \
     "${pkgdir}/usr/share/icons/hicolor/scalable/apps/spotifast.svg"
   # Older release fixtures predate the optional integration.
   if [[ -d contrib/omarchy ]]; then
