@@ -700,6 +700,10 @@ pub enum Command {
     },
     DeleteDownload(String),
     DeleteDownloadCollection(String),
+    DiscordPresence {
+        enabled: bool,
+        track: Option<crate::discord::PresenceTrack>,
+    },
 }
 
 pub struct LyricsRequest {
@@ -1047,6 +1051,7 @@ impl Backend {
                 Command::Accent { .. }
                     | Command::ClearAudioCache
                     | Command::Shutdown
+                    | Command::DiscordPresence { .. }
                     | Command::CheckForUpdates { .. }
                     | Command::DownloadUpdate { .. }
                     | Command::InstallUpdate { .. }
@@ -1676,6 +1681,7 @@ struct Worker {
     explore_cache: Arc<std::sync::Mutex<HashMap<String, Vec<YtTrack>>>>,
     explore_titles: Arc<std::sync::Mutex<HashMap<String, String>>>,
     explore_sections: Arc<std::sync::Mutex<Vec<(String, Vec<YtTrack>)>>>,
+    discord: crate::discord::DiscordPresence,
     _credentials: CredentialStore,
 }
 
@@ -1714,6 +1720,7 @@ impl Worker {
             explore_cache: Arc::new(std::sync::Mutex::new(HashMap::new())),
             explore_titles: Arc::new(std::sync::Mutex::new(HashMap::new())),
             explore_sections: Arc::new(std::sync::Mutex::new(Vec::new())),
+            discord: crate::discord::DiscordPresence::new(),
             _credentials: credentials,
         }
     }
@@ -1795,10 +1802,15 @@ impl Worker {
         while let Some(command) = commands.recv().await {
             match command {
                 Command::Shutdown => {
+                    self.discord.shutdown();
                     if let Some(engine) = self.engine.take() {
                         engine.shutdown();
                     }
                     break;
+                }
+                Command::DiscordPresence { enabled, track } => {
+                    self.discord.set_enabled(enabled);
+                    self.discord.update(track);
                 }
                 Command::Player(cmd) => {
                     if let Some(engine) = &self.engine {

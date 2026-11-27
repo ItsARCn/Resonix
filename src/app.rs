@@ -929,6 +929,18 @@ pub struct App {
     pub downloads: Loadable<crate::model::DownloadsLibrary>,
     pub downloaded_ids: HashSet<String>,
     pub downloading_ids: HashSet<String>,
+    discord_active: bool,
+    discord_sent: Option<DiscordSent>,
+}
+
+struct DiscordSent {
+    enabled: bool,
+    uri: Option<String>,
+    title: String,
+    artist: String,
+    playing: bool,
+    position_ms: u32,
+    sent_at: Instant,
 }
 
 /// How many plays the Home shelf asks for: it shows sixteen cards.
@@ -1541,6 +1553,8 @@ impl App {
             downloads: Loadable::NotLoaded,
             downloaded_ids: HashSet::new(),
             downloading_ids: HashSet::new(),
+            discord_active: options.media_controls,
+            discord_sent: None,
         };
         app.local.volume = app.settings.volume;
         if let Some(folder) = app.settings.local_files_folder() {
@@ -5992,6 +6006,71 @@ impl App {
             *slot.lock().unwrap_or_else(|p| p.into_inner()) = snapshot;
             self.control_devices_stale = false;
         }
+        self.sync_discord_presence();
+    }
+
+    fn sync_discord_presence(&mut self) {
+        if !self.discord_active {
+            return;
+        }
+        let enabled = self.settings.discord_rpc_enabled;
+        let now_opt = if enabled { self.now_playing() } else { None };
+        let next_uri = now_opt.as_ref().map(|n| n.uri.clone());
+        let next_title = now_opt
+            .as_ref()
+            .map_or_else(String::new, |n| n.title.clone());
+        let next_artist = now_opt.as_ref().map_or_else(String::new, |n| {
+            crate::api::models::join_names(n.artists.iter().map(|a| a.name.as_str()))
+        });
+        let next_playing = now_opt.as_ref().is_some_and(|n| n.playing);
+        let next_pos = now_opt.as_ref().map_or(0, |n| n.position_ms);
+
+        let unchanged = self.discord_sent.as_ref().is_some_and(|prev| {
+            if prev.enabled != enabled
+                || prev.uri != next_uri
+                || prev.title != next_title
+                || prev.artist != next_artist
+                || prev.playing != next_playing
+            {
+                return false;
+            }
+            if prev.playing {
+                let elapsed = prev.sent_at.elapsed().as_millis().min(u32::MAX as u128) as u32;
+                let expected = prev.position_ms.saturating_add(elapsed);
+                next_pos.abs_diff(expected) < 3_000
+            } else {
+                true
+            }
+        });
+        if unchanged {
+            return;
+        }
+
+        let track = now_opt.map(|now| crate::discord::PresenceTrack {
+            youtube_url: crate::util::open_youtube_url(&now.uri),
+            uri: now.uri,
+            title: next_title.clone(),
+            artist: next_artist.clone(),
+            album: now.album_name,
+            thumbnail: now
+                .art_url
+                .filter(|u| u.starts_with("https://") || u.starts_with("http://"))
+                .unwrap_or_default(),
+            playing: next_playing,
+            position_ms: next_pos,
+            duration_ms: now.duration_ms,
+        });
+        self.backend
+            .send(Command::DiscordPresence { enabled, track });
+        self.discord_sent = Some(DiscordSent {
+            enabled,
+            uri: next_uri,
+            title: next_title,
+            artist: next_artist,
+            playing: next_playing,
+            position_ms: next_pos,
+            sent_at: Instant::now(),
+        });
     }
 
     /// One line for the control channel's `nowplaying` verb: tab-separated
@@ -13848,6 +13927,7 @@ impl App {
             Action::SettingsChanged => {
                 self.settings_dirty = true;
                 ctx.set_theme(self.theme_preference());
+                self.sync_discord_presence();
             }
             Action::SetStartWithComputer(start) => {
                 self.autostart_wanted = Some(start);

@@ -356,6 +356,9 @@ pub struct Settings {
     pub playback_authorized: bool,
     /// Closing the window hides to the tray and keeps the music playing.
     pub keep_playing_in_background: bool,
+    /// Show currently playing track on Discord via local Rich Presence IPC.
+    #[serde(default = "default_discord_rpc")]
+    pub discord_rpc_enabled: bool,
     /// Linux and Windows: the tray icon in colour, white or black (#128).
     pub tray_icon: TrayIcon,
     /// Show the interactive Now Playing widget when hovering over the MacBook notch.
@@ -538,6 +541,7 @@ impl Default for Settings {
             slow_app_banner: SlowAppBanner::default(),
             playback_authorized: false,
             keep_playing_in_background: true,
+            discord_rpc_enabled: true,
             tray_icon: TrayIcon::Colour,
             mac_notch_widget: false,
             mac_show_in_dock: true,
@@ -594,6 +598,10 @@ impl Default for Settings {
 
 fn default_buffer_ms() -> u32 {
     crate::sink::DEFAULT_BUFFER_MS
+}
+
+fn default_discord_rpc() -> bool {
+    true
 }
 
 impl Settings {
