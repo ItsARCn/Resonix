@@ -1,7 +1,7 @@
 //! Lyrics for the playing track, from Spotify, a local file or LRCLIB.
 //!
 //! [LRCLIB](https://lrclib.net) provides plain and LRC-synced lyrics without an
-//! account or key. Spotifast tries Spotify's transcription first when the
+//! account or key. Resonix tries Spotify's transcription first when the
 //! playback session is signed in, then LRCLIB.
 //!
 //! Matching starts with an exact lookup, then ranks search results. Track
@@ -860,8 +860,7 @@ mod tests {
             answer("[]"),
         ])
         .await;
-        let root =
-            std::env::temp_dir().join(format!("spotifast-lyrics-miss-{}", std::process::id()));
+        let root = std::env::temp_dir().join(format!("resonix-lyrics-miss-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&root);
         let http = reqwest::Client::builder().no_proxy().build().unwrap();
         assert!(
@@ -881,7 +880,7 @@ mod tests {
     async fn outages_keep_old_lyrics_without_renewing_their_cache_or_reusing_old_misses() {
         let http = reqwest::Client::builder().no_proxy().build().unwrap();
         let root =
-            std::env::temp_dir().join(format!("spotifast-lyrics-stale-{}", std::process::id()));
+            std::env::temp_dir().join(format!("resonix-lyrics-stale-{}", std::process::id()));
         let path = root.join(format!("{}.json", cache_key(&outage_query())));
         for found in [from_text("[00:01.00] A test line"), None] {
             write_cache(&path, &found);

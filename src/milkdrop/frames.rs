@@ -303,7 +303,7 @@ mod tests {
     use std::time::{Duration, Instant};
 
     fn file(name: &str) -> PathBuf {
-        std::env::temp_dir().join(format!("spotifast-frames-{name}-{}", std::process::id()))
+        std::env::temp_dir().join(format!("resonix-frames-{name}-{}", std::process::id()))
     }
 
     #[test]

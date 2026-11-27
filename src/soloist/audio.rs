@@ -190,10 +190,6 @@ pub struct Bridge {
     pub name: String,
     state: Arc<State>,
     #[cfg(target_os = "linux")]
-    config: crate::player::EngineConfig,
-    #[cfg(target_os = "linux")]
-    output: Option<String>,
-    #[cfg(target_os = "linux")]
     worker: Mutex<Option<std::thread::JoinHandle<()>>>,
 }
 impl Drop for Bridge {
@@ -237,18 +233,16 @@ impl Bridge {
 
     #[cfg(target_os = "linux")]
     async fn open_on(
-        config: crate::player::EngineConfig,
-        output: Option<String>,
+        _config: crate::player::EngineConfig,
+        _output: Option<String>,
         route_volume: OutputVolume,
     ) -> Option<Self> {
         let bridge = Self {
-            name: format!("spotifast.soloist.{:016x}", rand::random::<u64>()),
+            name: format!("resonix.soloist.{:016x}", rand::random::<u64>()),
             state: Arc::new(State {
                 route_volume,
                 ..State::new()
             }),
-            config,
-            output,
             worker: Mutex::new(None),
         };
         if !bridge.start().await {
@@ -479,29 +473,10 @@ mod tests {
 
     #[test]
     fn only_a_confirmed_healthy_mac_output_allows_full_source_volume() {
-        #[cfg(target_os = "linux")]
-        let config = {
-            let dirs = crate::paths::AppDirs {
-                config: std::path::PathBuf::new(),
-                state: std::path::PathBuf::new(),
-                cache: std::path::PathBuf::new(),
-            };
-            crate::app::engine_config(
-                &dirs,
-                &crate::settings::Settings::default(),
-                crate::settings::ProxyConfig::Off,
-                crate::vis::AudioTap::new(),
-                crate::eq::shared(),
-            )
-        };
         let bridge = Bridge {
             #[cfg(target_os = "linux")]
             name: "test".into(),
             state: Arc::new(State::new()),
-            #[cfg(target_os = "linux")]
-            config,
-            #[cfg(target_os = "linux")]
-            output: None,
             #[cfg(target_os = "linux")]
             worker: Mutex::new(None),
         };

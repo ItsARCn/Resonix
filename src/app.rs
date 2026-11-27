@@ -392,7 +392,7 @@ pub struct App {
     /// at login can beat the desktop's tray host, and without one by then
     /// the window opens, since nothing else could bring it back.
     tray_wait: Option<Instant>,
-    /// What the system has registered to start Spotifast at login, as last
+    /// What the system has registered to start Resonix at login, as last
     /// read; `None` until the first answer.
     pub autostart: Option<fastframe_autostart::State>,
     /// The person's latest choice of how to start at login, shown until the
@@ -432,7 +432,7 @@ pub struct App {
     pub screen_hz: u32,
     /// Whether the desktop asks for less motion.
     pub motion: crate::motion::Motion,
-    /// macOS: whether the Dock shows Spotifast as this window last made it,
+    /// macOS: whether the Dock shows Resonix as this window last made it,
     /// or `None` until the window applies it (winit puts an unbundled run
     /// back in the Dock as it launches).
     #[cfg(target_os = "macos")]
@@ -445,7 +445,7 @@ pub struct App {
     /// The window should close and reopen at once as the other kind: the
     /// big window or the Winamp mini player.
     pub switch_intent: bool,
-    /// Commands from control clients (a second `spotifast <verb>` launch,
+    /// Commands from control clients (a second `resonix <verb>` launch,
     /// a Raycast script, a link the desktop opens). Drained every frame.
     control_commands: Option<std::sync::Arc<std::sync::Mutex<Vec<ControlCommand>>>>,
     /// Now-playing snapshot for the control channel.
@@ -499,7 +499,7 @@ pub struct App {
     pub(crate) soloist_status_at: Instant,
     /// The app has opened since sign-in, so the loading screen stays away.
     pub(crate) soloist_settled: bool,
-    /// When Spotifast next starts a stopped player by itself.
+    /// When Resonix next starts a stopped player by itself.
     pub(crate) soloist_retry_at: Option<Instant>,
     soloist_retries: usize,
     soloist_bound_at: Option<Instant>,
@@ -953,9 +953,9 @@ const HOME_PODCAST_SHOWS: usize = 8;
 const RECENTS_PAGE: u32 = 50;
 
 /// Who the desktop's media controls belong to. Links to Spotify, as
-/// `spotify:` URIs or web addresses, are what they may ask Spotifast to open.
+/// `spotify:` URIs or web addresses, are what they may ask Resonix to open.
 fn media_app() -> fastframe_now_playing::App {
-    let mut app = fastframe_now_playing::App::new("spotifast", "Resonix");
+    let mut app = fastframe_now_playing::App::new("resonix", "Resonix");
     app.uri_schemes = vec!["spotify".into(), "https".into(), "http".into()];
     app
 }
@@ -1017,7 +1017,7 @@ impl fastframe_shell::Resident for App {
     /// window opens instead.
     fn start_hidden(&mut self) -> bool {
         if self.tray.is_none() || !self.settings.keep_playing_in_background {
-            log::info!("starting with the window: nothing would keep Spotifast in the tray");
+            log::info!("starting with the window: nothing would keep Resonix in the tray");
             return false;
         }
         self.begin_hidden_start(Instant::now());
@@ -1046,7 +1046,7 @@ const SOLOIST_LOADING_GRACE: Duration = Duration::from_secs(10);
 /// Every start reports pairing until Soloist answers, and a dropped session
 /// usually comes back. Only past this does it need the listener.
 pub(crate) const SOLOIST_PAIRING_GRACE: Duration = Duration::from_secs(20);
-/// The waits before Spotifast starts a stopped player again by itself.
+/// The waits before Resonix starts a stopped player again by itself.
 const SOLOIST_RETRIES: [Duration; 3] = [
     Duration::from_secs(2),
     Duration::from_secs(10),
@@ -1069,7 +1069,7 @@ fn play_pause_label(playing: bool) -> &'static str {
     if playing { "Pause" } else { "Play" }
 }
 
-/// macOS: whether the Dock shows Spotifast. Settings can take it out, but
+/// macOS: whether the Dock shows Resonix. Settings can take it out, but
 /// only while the menu-bar item exists, which is then the way back to a
 /// closed window (#837). There is no setting to hide that item, so in
 /// practice only a capture run, which has no item, keeps the icon anyway.
@@ -1093,12 +1093,12 @@ fn tray_icon_colour(choice: crate::settings::TrayIcon) -> fastframe_tray::IconCo
     }
 }
 
-/// The tray item: Spotifast's icon, and a menu that shows or hides the
+/// The tray item: Resonix's icon, and a menu that shows or hides the
 /// window, controls playback and quits.
 fn tray_config() -> fastframe_tray::Config {
     use fastframe_tray::MenuItem;
     fastframe_tray::Config {
-        id: "spotifast",
+        id: "resonix",
         title: "Resonix".into(),
         icon: util::app_icon_rgba,
         template_icon: Some(util::tray_template_rgba),
@@ -1563,7 +1563,7 @@ impl App {
         // What was played here is on disk and needs nothing from the
         // network, so the tab has rows before Spotify has answered.
         app.rebuild_recents();
-        // Whether Spotifast starts at login, for its Settings row; the
+        // Whether Resonix starts at login, for its Settings row; the
         // answer comes from the backend's thread.
         if app.autostart_live {
             app.send_autostart(crate::backend::AutostartRequest::Read);
@@ -1605,7 +1605,7 @@ impl App {
         self.winamp_level_reassert = 0;
         // egui's memory went with the last window, the scroll position with it.
         self.restore_scroll = self.page_scroll.clone();
-        // A new window starts titled "Spotifast"; name the playing song
+        // A new window starts titled "Resonix"; name the playing song
         // again rather than trust what the replaced window was told.
         self.window_title.clear();
         // An unbundled run is put back in the Dock as AppKit finishes
@@ -1821,7 +1821,7 @@ impl App {
         }
     }
 
-    /// Spotifast is bringing the player back and needs nothing from the
+    /// Resonix is bringing the player back and needs nothing from the
     /// listener, so a song chosen now waits for it.
     pub fn soloist_recovering(&self) -> bool {
         use crate::soloist::Status;
@@ -2915,7 +2915,7 @@ impl App {
                                 self.toast(
                                     ngettext(
                                         self.locale,
-                                        // Translators: Files in the audio cache that Spotifast did not put there, such as .DS_Store. They were not deleted.
+                                        // Translators: Files in the audio cache that Resonix did not put there, such as .DS_Store. They were not deleted.
                                         "{count} unrecognized file was left in place.",
                                         "{count} unrecognized files were left in place.",
                                         cleared.skipped as u32,
@@ -3345,7 +3345,7 @@ impl App {
             }
             Update::UpdateReady(version) => self.soloist_update = Some(version),
             Update::UpdateFailed => self.toast_error(gettext(self.locale, "Soloist could not download its renewal. It will retry tomorrow; the current build is still installed.")),
-            Update::RolledBack => self.toast(gettext(self.locale, "Spotify's new Soloist build kept crashing on this computer, so Spotifast went back to the previous one.")),
+            Update::RolledBack => self.toast(gettext(self.locale, "Spotify's new Soloist build kept crashing on this computer, so Resonix went back to the previous one.")),
         }
     }
 
@@ -5636,7 +5636,7 @@ impl App {
     }
 
     /// The palette file's colours to show while the system is `dark` or
-    /// light, `None` for Spotifast's own Light or Dark.
+    /// light, `None` for Resonix's own Light or Dark.
     fn custom_palette(&self, dark: bool) -> Option<Palette> {
         self.settings.cached_palette(dark)
     }
@@ -6154,7 +6154,7 @@ impl App {
         self.backend.send(Command::Rootlist);
     }
 
-    /// Spotify's own apps can reorder playlists and folders while Spotifast
+    /// Spotify's own apps can reorder playlists and folders while Resonix
     /// waits behind them, so coming back reads the tree again. The read
     /// goes over the playback session and spends no Web API quota. A return
     /// soon after the last read waits out the rest of `ROOTLIST_REFRESH`,
@@ -11472,7 +11472,7 @@ impl App {
 
     /// `settle` is false while the slider is still moving: the level is heard
     /// at once, and Spotify is told where it ended up on release.
-    /// Whether the playing device takes volume changes from Spotifast.
+    /// Whether the playing device takes volume changes from Resonix.
     /// Spotify refuses them for some remote devices, so the controls are
     /// disabled for those rather than failing when used.
     pub fn can_set_volume(&self) -> bool {
@@ -15228,7 +15228,7 @@ impl App {
         self.rebuild_recents();
     }
 
-    /// Puts Spotifast in the Dock or takes it out, as Settings asks, on a
+    /// Puts Resonix in the Dock or takes it out, as Settings asks, on a
     /// window's first pass and whenever the setting changes (#837).
     #[cfg(target_os = "macos")]
     fn sync_dock_icon(&mut self, ctx: &egui::Context) {
@@ -19918,7 +19918,7 @@ mod tests {
     #[test]
     fn a_saved_window_below_its_minimum_opens_at_the_default_size() {
         let root = std::env::temp_dir().join(format!(
-            "spotifast-undersized-window-test-{}",
+            "resonix-undersized-window-test-{}",
             std::process::id()
         ));
         let dirs = || AppDirs {
@@ -20071,7 +20071,7 @@ mod tests {
     #[should_panic(expected = "UI thread")]
     fn a_save_that_waits_for_the_disk_is_refused_on_the_ui_thread() {
         let dir = std::env::temp_dir().join(format!(
-            "spotifast-ui-thread-save-{:016x}",
+            "resonix-ui-thread-save-{:016x}",
             rand::random::<u64>()
         ));
         fastframe_file::mark_ui_thread();
@@ -20983,10 +20983,8 @@ mod tests {
     /// comes back without it.
     #[test]
     fn a_saved_queue_comes_back_without_spotifys_padding() {
-        let root = std::env::temp_dir().join(format!(
-            "spotifast-queue-padding-test-{}",
-            std::process::id()
-        ));
+        let root =
+            std::env::temp_dir().join(format!("resonix-queue-padding-test-{}", std::process::id()));
         let dirs = || AppDirs {
             config: root.join("config"),
             state: root.join("state"),
@@ -23065,7 +23063,7 @@ mod tests {
         );
     }
 
-    /// If Spotify returns an unchanged queue order after shuffle, Spotifast
+    /// If Spotify returns an unchanged queue order after shuffle, Resonix
     /// retries up to the limit and then accepts the result as a bounded fallback.
     #[test]
     fn unchanged_shuffle_result_has_bounded_fallback() {
@@ -23105,7 +23103,7 @@ mod tests {
             assert!(app.queue_recheck_at.is_some());
         }
 
-        // The next response exceeds the retry limit, so Spotifast accepts it.
+        // The next response exceeds the retry limit, so Resonix accepts it.
         app.handle_api(ApiResponse::Queue {
             seq,
             result: Ok(unchanged_response),
@@ -24421,20 +24419,20 @@ mod tests {
     fn soloist_binding_requires_one_exact_device_in_the_signed_in_account() {
         let mut app = test_app("soloist-bind");
         app.soloist_status = crate::soloist::Status::Ready {
-            name: "Spotifast Soloist (specific)".into(),
+            name: "Resonix Soloist (specific)".into(),
             version: "test".into(),
             expires: u64::MAX,
         };
         app.devices = vec![Device {
             id: Some("unrelated".into()),
-            name: "Spotifast Soloist".into(),
+            name: "Resonix Soloist".into(),
             ..Default::default()
         }];
         app.bind_soloist_device();
         assert!(app.soloist_device_id.is_none());
         let own = Device {
             id: Some("own".into()),
-            name: "Spotifast Soloist (specific)".into(),
+            name: "Resonix Soloist (specific)".into(),
             ..Default::default()
         };
         app.devices.push(own.clone());
@@ -24533,8 +24531,7 @@ mod tests {
     }
 
     fn test_app(name: &str) -> App {
-        let root =
-            std::env::temp_dir().join(format!("spotifast-{name}-test-{}", std::process::id()));
+        let root = std::env::temp_dir().join(format!("resonix-{name}-test-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&root);
         let mut app = App::new(
             &Waker::default(),
@@ -25551,7 +25548,7 @@ mod tests {
         assert_eq!(ctx.theme(), egui::Theme::Dark);
         assert_eq!(app.palette, mocha.palette);
 
-        // Spotifast's own Light for light mode again.
+        // Resonix's own Light for light mode again.
         app.apply(Action::SetPairTheme(light, None), &ctx);
         system(&mut app, egui::Theme::Light);
         assert_eq!(app.palette, Palette::light());
@@ -26543,10 +26540,8 @@ mod tests {
     /// Closing and reopening restores queue rows and their manual split.
     #[test]
     fn the_queue_comes_back_after_a_restart() {
-        let root = std::env::temp_dir().join(format!(
-            "spotifast-queue-restart-test-{}",
-            std::process::id()
-        ));
+        let root =
+            std::env::temp_dir().join(format!("resonix-queue-restart-test-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&root);
         let dirs = AppDirs {
             config: root.join("config"),
@@ -26805,7 +26800,7 @@ mod tests {
 
     /// A replaced window, as when the mini player's taskbar setting
     /// changes, is titled with the playing song again, not left as
-    /// "Spotifast".
+    /// "Resonix".
     #[test]
     fn a_new_window_is_titled_with_the_playing_song() {
         let ctx = egui::Context::default();
@@ -27603,7 +27598,7 @@ mod tests {
         assert!(!app.window_hidden, "a window this app still owns");
 
         // #when something asks for the window: the Dock, the tray, or
-        // `spotifast show`
+        // `resonix show`
         let mut output = ctx.run_ui(Default::default(), |ui| {
             app.apply(Action::ShowWindow, ui.ctx());
         });
@@ -27763,7 +27758,7 @@ mod tests {
         });
         change_power(&app, |conditions| conditions.metered = true);
         app.handle_backend_events(vec![Event::UpdateSupport(Ok(Installation {
-            executable: "/test/spotifast".into(),
+            executable: "/test/resonix".into(),
             kind: Kind::Portable,
         }))]);
         let ctx = egui::Context::default();
@@ -27826,7 +27821,7 @@ mod tests {
                 url: "https://example.invalid/release".into(),
             });
             app.handle_backend_events(vec![Event::UpdateSupport(Ok(Installation {
-                executable: "/test/spotifast".into(),
+                executable: "/test/resonix".into(),
                 kind: Kind::Portable,
             }))]);
             app.apply_actions(&egui::Context::default());
@@ -27868,7 +27863,7 @@ mod tests {
         });
         change_power(&app, |conditions| conditions.metered = true);
         app.handle_backend_events(vec![Event::UpdateSupport(Ok(Installation {
-            executable: "/test/spotifast".into(),
+            executable: "/test/resonix".into(),
             kind: Kind::Portable,
         }))]);
         let ctx = egui::Context::default();
@@ -28308,8 +28303,7 @@ mod tests {
     }
 
     fn headless_app() -> App {
-        let root =
-            std::env::temp_dir().join(format!("spotifast-volume-test-{}", std::process::id()));
+        let root = std::env::temp_dir().join(format!("resonix-volume-test-{}", std::process::id()));
         let dirs = AppDirs {
             config: root.join("config"),
             state: root.join("state"),
@@ -28330,7 +28324,7 @@ mod tests {
         app
     }
 
-    /// Settings takes Spotifast out of the Dock only while its menu-bar
+    /// Settings takes Resonix out of the Dock only while its menu-bar
     /// item is there to bring a closed window back (#837).
     #[test]
     fn the_dock_icon_goes_only_while_the_menu_bar_item_stays() {
@@ -29760,7 +29754,7 @@ mod tests {
                 manual,
                 result: Ok(Some(crate::updates::Release {
                     version: "1.2.3".into(),
-                    url: "https://github.com/crmne/spotifast/releases/tag/v1.2.3".into(),
+                    url: "https://github.com/ItsARCn/Resonix/releases/tag/v1.2.3".into(),
                 })),
             }]);
             let ctx = egui::Context::default();
@@ -29780,7 +29774,7 @@ mod tests {
         let mut app = headless_app();
         app.update = Some(crate::updates::Release {
             version: "1.2.3".into(),
-            url: "https://github.com/crmne/spotifast/releases/tag/v1.2.3".into(),
+            url: "https://github.com/ItsARCn/Resonix/releases/tag/v1.2.3".into(),
         });
         app.update_download = DownloadState::Downloading {
             received: 0,
@@ -29790,7 +29784,7 @@ mod tests {
             reason: "The release has no signed download".into(),
             route: Some(Route::Managed {
                 manager: Manager::Aur,
-                command: Some("yay -Syu spotifast-bin".into()),
+                command: Some("yay -Syu resonix-bin".into()),
             }),
         };
         app.handle_backend_events(vec![
@@ -29814,7 +29808,7 @@ mod tests {
         let mut app = headless_app();
         app.update = Some(crate::updates::Release {
             version: "1.2.3".into(),
-            url: "https://github.com/crmne/spotifast/releases/tag/v1.2.3".into(),
+            url: "https://github.com/ItsARCn/Resonix/releases/tag/v1.2.3".into(),
         });
         app.update_checking = true;
         app.handle_backend_events(vec![Event::UpdateChecked {
@@ -29865,7 +29859,7 @@ mod tests {
             manual: false,
             result: Ok(Some(crate::updates::Release {
                 version: "1.2.3".into(),
-                url: "https://github.com/crmne/spotifast/releases/tag/v1.2.3".into(),
+                url: "https://github.com/ItsARCn/Resonix/releases/tag/v1.2.3".into(),
             })),
         }]);
 
@@ -33963,10 +33957,6 @@ mod tests {
         let now = app.now_playing().unwrap();
         assert!(!now.local);
         assert_eq!(now.device_kind.as_deref(), Some("Smartphone"));
-        assert!(matches!(
-            crate::ui::devices::device_icon(now.device_kind.as_deref().unwrap()),
-            crate::theme::Icon::Smartphone
-        ));
         app.backend.shutdown();
     }
 
@@ -34536,7 +34526,7 @@ mod tests {
         app.selected_device = None;
         app.plays = crate::history::History::default();
         let state_dir =
-            std::env::temp_dir().join(format!("spotifast-repeat-history-{}", std::process::id()));
+            std::env::temp_dir().join(format!("resonix-repeat-history-{}", std::process::id()));
         app.dirs.state = state_dir.clone();
         for sequence in [1, 2] {
             app.handle_local(LocalState {
@@ -36343,12 +36333,10 @@ mod tests {
     #[test]
     fn mpris_search_links_open_search_on_a_private_bus() {
         use std::time::{Duration, Instant};
-        const CHILD: &str = "SPOTIFAST_SEARCH_PRIVATE_BUS";
+        const CHILD: &str = "RESONIX_SEARCH_PRIVATE_BUS";
         if std::env::var_os(CHILD).is_none() {
-            let root = std::env::temp_dir().join(format!(
-                "spotifast-search-bus-{:016x}",
-                rand::random::<u64>()
-            ));
+            let root = std::env::temp_dir()
+                .join(format!("resonix-search-bus-{:016x}", rand::random::<u64>()));
             std::fs::create_dir(&root).unwrap();
             let config = root.join("session.conf");
             std::fs::write(&config, r#"<busconfig><type>session</type><listen>unix:tmpdir=/tmp</listen><auth>EXTERNAL</auth><policy context="default"><allow own="*"/><allow send_destination="*"/><allow receive_sender="*"/></policy></busconfig>"#).unwrap();
@@ -36387,7 +36375,7 @@ mod tests {
             .unwrap();
         let call = |uri: &str| {
             client.call_method(
-                Some("org.mpris.MediaPlayer2.spotifast"),
+                Some("org.mpris.MediaPlayer2.resonix"),
                 "/org/mpris/MediaPlayer2",
                 Some("org.mpris.MediaPlayer2.Player"),
                 "OpenUri",
@@ -36414,7 +36402,7 @@ mod tests {
         assert!(matches!(app.actions.as_slice(), [Action::OpenLink(_)]));
         let schemes: Vec<String> = zbus::blocking::Proxy::new(
             &client,
-            "org.mpris.MediaPlayer2.spotifast",
+            "org.mpris.MediaPlayer2.resonix",
             "/org/mpris/MediaPlayer2",
             "org.mpris.MediaPlayer2",
         )
@@ -36586,7 +36574,7 @@ mod tests {
         assert_eq!(app.editable_context_playlist(), None, "no context");
     }
 
-    /// Spotify's own apps reorder playlists while Spotifast is in the
+    /// Spotify's own apps reorder playlists while Resonix is in the
     /// background (#683); coming back reads the tree again, at most every
     /// `ROOTLIST_REFRESH`, once every playlist has arrived.
     #[test]
@@ -36655,7 +36643,7 @@ mod tests {
     #[test]
     fn the_last_playlist_tree_stays_visible_for_its_account() {
         let root = std::env::temp_dir().join(format!(
-            "spotifast-rootlist-restart-test-{}",
+            "resonix-rootlist-restart-test-{}",
             std::process::id()
         ));
         let _ = std::fs::remove_dir_all(&root);

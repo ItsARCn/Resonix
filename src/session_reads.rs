@@ -7,7 +7,6 @@
 use std::collections::HashMap;
 
 use crate::api::ApiError;
-use crate::api::models::Track;
 
 /// Why a catalogue read failed.
 #[derive(Debug)]
@@ -32,6 +31,7 @@ pub struct RemovedRow {
 }
 
 /// A station seeded by a track URI starts with that track once.
+#[cfg(test)]
 pub(crate) fn seed_first(station: &str, uris: Vec<String>) -> Vec<String> {
     let Some(seed) = crate::util::station_seed(station) else {
         return uris;
@@ -74,34 +74,4 @@ pub struct FriendActivity {
 pub struct FriendNames {
     pub profiles: HashMap<String, UserProfile>,
     pub playlists: HashMap<String, String>,
-}
-
-/// Percent-decode `spotify:local:` labels when needed.
-pub(crate) fn normalize_local_track_labels(track: &mut Track) {
-    if !track.uri.starts_with("spotify:local:") {
-        return;
-    }
-    let parts: Vec<&str> = track.uri.split(':').collect();
-    if parts.len() < 5 {
-        return;
-    }
-    let artist = parts[2];
-    let album_title = parts[3];
-    let track_title = parts[4];
-    let decode = |name: &mut String, encoded: &str| {
-        if name != encoded || !encoded.contains(['+', '%']) {
-            return;
-        }
-        let spaced = encoded.replace('+', " ");
-        if let Ok(decoded) = percent_encoding::percent_decode_str(&spaced).decode_utf8() {
-            *name = decoded.into_owned();
-        }
-    };
-    decode(&mut track.name, track_title);
-    if let [artist_ref] = track.artists.as_mut_slice() {
-        decode(&mut artist_ref.name, artist);
-    }
-    if let Some(album) = &mut track.album {
-        decode(&mut album.name, album_title);
-    }
 }

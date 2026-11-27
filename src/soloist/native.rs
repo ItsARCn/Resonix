@@ -110,7 +110,7 @@ mod adapter {
     // The native function borrows Context until it returns. Only its worker
     // calls process/event, sequentially; real-time callbacks only call control.
     unsafe extern "C" {
-        fn spotifast_soloist_audio(
+        fn resonix_soloist_audio(
             pid: u32,
             context: *mut c_void,
             control: extern "C" fn(*mut c_void) -> u32,
@@ -188,7 +188,7 @@ mod adapter {
                 state: worker.clone(),
             };
             // SAFETY: Context stays alive until every native callback ends.
-            let status = unsafe { spotifast_soloist_audio(worker.child.load(Ordering::Acquire),
+            let status = unsafe { resonix_soloist_audio(worker.child.load(Ordering::Acquire),
                 (&mut context as *mut Context).cast(), control, process, event) };
             worker.routed.store(false, Ordering::Release);
             // Errors before the Mac source is muted, and all Windows capture

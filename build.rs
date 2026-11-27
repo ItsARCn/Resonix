@@ -52,9 +52,9 @@ fn main() {
         let mut resource = winresource::WindowsResource::new();
         resource
             .set_icon("packaging/windows/spotifast.ico")
-            .set("ProductName", "Spotifast")
+            .set("ProductName", "Resonix")
             // Task Manager and the Windows mixer name the process by its description.
-            .set("FileDescription", "Spotifast");
+            .set("FileDescription", "Resonix");
         if let Err(error) = resource.compile() {
             println!("cargo:warning=Windows resources not embedded: {error}");
         }
@@ -116,5 +116,5 @@ fn native_soloist_audio() {
         println!("cargo:rustc-link-lib=ole32");
         println!("cargo:rustc-link-lib=uuid");
     }
-    build.compile("spotifast_soloist_audio");
+    build.compile("resonix_soloist_audio");
 }

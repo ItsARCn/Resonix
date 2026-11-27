@@ -4,7 +4,7 @@
 //!
 //! The threads are made realtime, SCHED_RR 15. That sits between the two
 //! kinds of realtime thread a desktop's audio has. PipeWire's data loops, the
-//! daemon's and those of every client, Spotifast's own bridge among them,
+//! daemon's and those of every client, Resonix's own bridge among them,
 //! ask for more than rtkit allows and get its maximum, `MaxRealtimePriority`,
 //! which is 20 by default: Soloist must stay below them, since it feeds them.
 //! Browsers, through cubeb, and other audio libraries ask rtkit for 10, and a
@@ -15,7 +15,7 @@
 //! Soloist is closed source, so realtime is safe only because it runs under
 //! `RLIMIT_RTTIME` (`bound_realtime`): a realtime thread that runs that long
 //! without sleeping is killed by the kernel instead of stalling the desktop,
-//! and Spotifast starts Soloist again. rtkit grants nothing to a process
+//! and Resonix starts Soloist again. rtkit grants nothing to a process
 //! without that limit.
 //!
 //! rtkit can say no for a while: it allows each user a burst of requests, and

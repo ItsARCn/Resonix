@@ -41,8 +41,8 @@ const PICTURE_WAIT: Duration = Duration::from_millis(1500);
 fn deck() -> Deck {
     let song = |title: &str| Song {
         title: title.to_owned(),
-        artist: "Spotifast".to_owned(),
-        album: "Spotifast".to_owned(),
+        artist: "Resonix".to_owned(),
+        album: "Resonix".to_owned(),
         uri: format!("spotify:track:{title}"),
         duration_s: 214.0,
     };
@@ -224,7 +224,7 @@ fn classic(skin: &Skin) -> Bitmap {
         s.put(sprites::NUMBERS_NO_MINUS, layout::MINUS);
     }
     s.bars();
-    s.text("SPOTIFAST - SONG ONE", layout::MARQUEE);
+    s.text("RESONIX - SONG ONE", layout::MARQUEE);
     s.text("320", layout::KBPS);
     s.text("44", layout::KHZ);
     let volume = 70;
@@ -472,13 +472,13 @@ mod tests {
         assert_eq!(Bitmap::decode(&encode(&bitmap).unwrap()), Some(bitmap));
     }
 
-    /// Draws every skin in `$SPOTIFAST_PREVIEW_SAMPLES` into
-    /// `$SPOTIFAST_PREVIEW_OUTPUT`, and says what each cost.
+    /// Draws every skin in `$RESONIX_PREVIEW_SAMPLES` into
+    /// `$RESONIX_PREVIEW_OUTPUT`, and says what each cost.
     #[test]
     fn sample_previews() {
         let (Ok(folder), Ok(output)) = (
-            std::env::var("SPOTIFAST_PREVIEW_SAMPLES"),
-            std::env::var("SPOTIFAST_PREVIEW_OUTPUT"),
+            std::env::var("RESONIX_PREVIEW_SAMPLES"),
+            std::env::var("RESONIX_PREVIEW_OUTPUT"),
         ) else {
             return;
         };

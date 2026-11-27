@@ -21,6 +21,7 @@ use crate::http::Http;
 
 const BASE_URL: &str = "https://api.spotify.com/v1";
 const MAX_IN_FLIGHT: usize = 6;
+#[cfg(test)]
 const MAX_BACKGROUND_IN_FLIGHT: usize = 4;
 const RATE_LIMIT_RETRIES: u32 = 3;
 const MAX_RETRY_AFTER: Duration = Duration::from_secs(30);
@@ -381,9 +382,11 @@ pub struct ApiClient {
     http: Http,
     tokens: Mutex<Option<TokenProvider>>,
     limiter: Semaphore,
+    #[cfg(test)]
     background_limiter: Semaphore,
     queue_writes: tokio::sync::Mutex<()>,
     cooldown_until: tokio::sync::Mutex<Instant>,
+    #[cfg(test)]
     partner_cooldown_until: tokio::sync::Mutex<Instant>,
     search_limit: u32,
     artist_albums_limit: u32,
@@ -406,9 +409,11 @@ impl ApiClient {
             http: http.into(),
             tokens: Mutex::new(None),
             limiter: Semaphore::new(MAX_IN_FLIGHT),
+            #[cfg(test)]
             background_limiter: Semaphore::new(MAX_BACKGROUND_IN_FLIGHT),
             queue_writes: tokio::sync::Mutex::new(()),
             cooldown_until: tokio::sync::Mutex::new(Instant::now()),
+            #[cfg(test)]
             partner_cooldown_until: tokio::sync::Mutex::new(Instant::now()),
             search_limit,
             artist_albums_limit,
@@ -422,12 +427,14 @@ impl ApiClient {
     }
 
     /// A throttled shared app must not occupy the personal app's background slots.
+    #[cfg(test)]
     pub(crate) async fn background_permit(&self) -> Option<tokio::sync::SemaphorePermit<'_>> {
         self.background_limiter.acquire().await.ok()
     }
 
     /// The Home section's `sp_t` field, from an already verified Web API
     /// grant. This is never sent to the Web API under the playback identity.
+    #[cfg(test)]
     pub(crate) async fn home_context_token(&self) -> Result<String> {
         self.provider()?.access_token().await
     }
@@ -454,12 +461,14 @@ impl ApiClient {
             .ok_or(ApiError::NotSignedIn)
     }
 
+    #[cfg(test)]
     fn http_client(&self) -> Result<reqwest::Client> {
         self.http.client().map_err(ApiError::Network)
     }
 
     /// Pathfinder has a separate cooldown: a shared Web API throttle must not
     /// block it, and a prerelease refresh must not erase its own Retry-After.
+    #[cfg(test)]
     pub(crate) async fn partner_request(
         &self,
         bearer: &str,
@@ -1631,7 +1640,7 @@ mod tests {
     #[tokio::test]
     async fn revoked_provider_cannot_return_or_persist_its_token() {
         let root =
-            std::env::temp_dir().join(format!("spotifast-revoked-provider-{}", std::process::id()));
+            std::env::temp_dir().join(format!("resonix-revoked-provider-{}", std::process::id()));
         let store = crate::credentials::Store::in_memory(crate::paths::AppDirs {
             config: root.join("config"),
             state: root.join("state"),

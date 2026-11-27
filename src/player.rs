@@ -1,7 +1,7 @@
 //! Local YouTube/Rust audio playback engine.
 //!
 //! Replaces the librespot playback engine with yt-dlp media resolution,
-//! rodio/symphonia decoding, and Spotifast's existing [`RodioSink`] +
+//! rodio/symphonia decoding, and Resonix's existing [`RodioSink`] +
 //! [`Tapped`] DSP chain (10-band EQ, Winamp/player-bar/MilkDrop audio tap,
 //! limiter, and smooth volume ramping).
 
@@ -289,16 +289,6 @@ impl Heard {
     pub(crate) fn level(&self) -> u16 {
         self.state.lock().unwrap_or_else(|p| p.into_inner()).volume
     }
-
-    #[cfg(test)]
-    pub(crate) fn at(volume: u16) -> Self {
-        Self {
-            state: Arc::new(Mutex::new(LocalState {
-                volume,
-                ..LocalState::default()
-            })),
-        }
-    }
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -475,7 +465,6 @@ enum EngineMsg {
     },
     TrackError {
         generation: u64,
-        uri: String,
         message: String,
     },
     TrackEnded {
@@ -803,7 +792,6 @@ async fn run_coordinator(
                     }
                     let _ = msg_tx.send(EngineMsg::TrackError {
                         generation: track_gen,
-                        uri,
                         message: err.to_string(),
                     });
                 }
@@ -874,7 +862,6 @@ async fn run_coordinator(
 
             EngineMsg::TrackError {
                 generation,
-                uri: _,
                 message,
             } => {
                 if generation != load_gen {
@@ -1691,7 +1678,6 @@ fn spawn_audio_feeder(
                                     active = None;
                                     let _ = msg_tx.send(EngineMsg::TrackError {
                                         generation,
-                                        uri: String::new(),
                                         message: format!("Failed to open audio file: {err}"),
                                     });
                                 }
@@ -1774,7 +1760,6 @@ fn spawn_audio_feeder(
                         let _ = tapped.stop();
                         let _ = msg_tx.send(EngineMsg::TrackError {
                             generation: track_gen,
-                            uri: String::new(),
                             message: err.to_string(),
                         });
                         continue;

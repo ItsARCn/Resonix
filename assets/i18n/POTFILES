@@ -3,11 +3,9 @@ src/i18n.rs
 src/ui/player_bar.rs
 src/ui/queue.rs
 src/ui/lyrics.rs
-src/ui/friends.rs
 src/ui/widgets.rs
 src/app.rs
 src/ui/settings.rs
-src/ui/soloist.rs
 src/soloist/mod.rs
 src/api/models.rs
 src/app/radio.rs
@@ -17,7 +15,6 @@ src/settings.rs
 src/theme.rs
 src/ui/artist.rs
 src/ui/collection.rs
-src/ui/devices.rs
 src/ui/dialogs.rs
 src/ui/home.rs
 src/ui/keys.rs

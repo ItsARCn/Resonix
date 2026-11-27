@@ -26,7 +26,7 @@ pub struct Credentials {
     pub auth_data: Vec<u8>,
 }
 
-const SERVICE: &str = "rocks.spotifast.Spotifast";
+const SERVICE: &str = "rocks.resonix.Resonix";
 const TIMEOUT: Duration = Duration::from_secs(20);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -99,7 +99,7 @@ impl Grant {
         match (slot, self) {
             // The slot says which session a grant belongs to. A shared grant
             // carries the client ID it was issued to and refreshes with it,
-            // so it keeps working without Spotifast knowing that ID.
+            // so it keeps working without Resonix knowing that ID.
             (Slot::Shared | Slot::Personal, Self::Web(token)) => {
                 !token.client_id.is_empty() && !token.refresh_token.is_empty()
             }
@@ -428,7 +428,7 @@ struct SealedFiles<S> {
 
 #[cfg(any(windows, test))]
 impl<S> SealedFiles<S> {
-    const MAGIC: &'static [u8] = b"spotifast-sealed-grant-1\n";
+    const MAGIC: &'static [u8] = b"resonix-sealed-grant-1\n";
 
     fn path(&self, key: &str) -> PathBuf {
         // Keys are "<hex profile>:<slot name>"; ':' cannot name a Windows file.
@@ -1237,7 +1237,7 @@ mod tests {
         fn new() -> Self {
             static NEXT: AtomicU64 = AtomicU64::new(0);
             let root = std::env::temp_dir().join(format!(
-                "spotifast-credential-tests-{}-{}",
+                "resonix-credential-tests-{}-{}",
                 std::process::id(),
                 NEXT.fetch_add(1, Ordering::Relaxed)
             ));
@@ -1950,7 +1950,7 @@ mod tests {
         }
     }
 
-    /// Spotifast no longer knows the client ID shared access was issued
+    /// Resonix no longer knows the client ID shared access was issued
     /// to. A grant saved for it still loads, whatever that ID, and
     /// refreshes with the ID it carries.
     #[tokio::test]

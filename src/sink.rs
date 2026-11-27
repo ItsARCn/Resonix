@@ -3,7 +3,7 @@
 //! librespot's rodio sink panics if no output device is available. Release
 //! builds abort on that panic. This sink opens the device when playback starts
 //! and reports a device it cannot open through the UI, from the first write
-//! (see `start`). Spotifast can then remain available as a Connect remote
+//! (see `start`). Resonix can then remain available as a Connect remote
 //! until an output appears.
 //!
 //! fastframe-audio owns the device stream: it pauses with playback, so a
@@ -76,7 +76,7 @@ pub trait Sink {
 /// Told about output failures, with a message fit for the interface.
 pub type ErrorHook = Arc<dyn Fn(String) + Send + Sync>;
 
-/// Told, with the saved name, the id of the device an older Spotifast saved
+/// Told, with the saved name, the id of the device an older Resonix saved
 /// by its name, once the output has opened on it, so the setting can hold
 /// the id from then on.
 pub type DeviceHook = Arc<dyn Fn(String, DeviceId) + Send + Sync>;
@@ -941,7 +941,7 @@ fn queue_is_full(queued_frames: u64, sample_rate: u32) -> bool {
 
 /// What a saved `audio_device` opens, among the outputs listed now.
 ///
-/// Spotifast saves the id `fastframe_audio::output_devices` gives (on Linux
+/// Resonix saves the id `fastframe_audio::output_devices` gives (on Linux
 /// PipeWire's or PulseAudio's node name, the WASAPI endpoint id on Windows,
 /// the CoreAudio UID on macOS). Up to 0.13.3 it saved a name from
 /// `output_device_names` instead, which on Linux was usually one of ALSA's
@@ -1037,7 +1037,7 @@ const MEDIA_NAME: &str = "Resonix playback";
 pub fn name_in_mixers() {
     let _ = fastframe_audio::set_app_info(fastframe_audio::AppInfo {
         name: "Resonix".to_owned(),
-        icon: Some("spotifast".to_owned()),
+        icon: Some("resonix".to_owned()),
     });
 }
 

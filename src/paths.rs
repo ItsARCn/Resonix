@@ -1,20 +1,20 @@
-//! Where Spotifast keeps its files.
+//! Where Resonix keeps its files.
 //!
 //! Configuration, durable non-secret state, and disposable caches live in the
 //! platform's conventional directories, or, for a copy started from the
-//! portable Windows zip, in `spotifast-data` next to the executable (#703).
+//! portable Windows zip, in `resonix-data` next to the executable (#703).
 //! Spotify grants use the platform store; the token paths below are retained
 //! only for migration and sign-out cleanup.
 
 use std::path::{Path, PathBuf};
 
-/// Where Spotifast's folders are: the per-user folders, or a portable copy's
+/// Where Resonix's folders are: the per-user folders, or a portable copy's
 /// own. A new portable folder copies the per-user settings and state, except
 /// the single-instance files a running installed copy holds locked and the
 /// logs of its runs.
 const FOLDERS: fastframe_dirs::App = fastframe_dirs::App {
-    not_copied: &["instance", "spotifast.log", "panic.log"],
-    ..fastframe_dirs::App::new("spotifast", "me", "paolino", "spotifast")
+    not_copied: &["instance", "resonix.log", "panic.log"],
+    ..fastframe_dirs::App::new("resonix", "me", "paolino", "resonix")
 };
 
 #[derive(Clone, Debug)]
@@ -125,9 +125,9 @@ impl AppDirs {
     fn fallback() -> Self {
         let fallback = std::env::current_dir().unwrap_or_default();
         Self {
-            config: fallback.join("spotifast-config"),
-            state: fallback.join("spotifast-state"),
-            cache: fallback.join("spotifast-cache"),
+            config: fallback.join("resonix-config"),
+            state: fallback.join("resonix-state"),
+            cache: fallback.join("resonix-cache"),
         }
     }
 
@@ -175,7 +175,7 @@ impl AppDirs {
 
     /// The log of the current run, replaced at every start.
     pub fn log_file(&self) -> PathBuf {
-        self.state.join("spotifast.log")
+        self.state.join("resonix.log")
     }
 
     /// Where a panic is recorded before the process dies of it.
@@ -275,9 +275,9 @@ fn account_file_name(account_id: &str) -> String {
 }
 
 /// What eframe remembers about the main window, in the folder it picks
-/// itself, which on Windows is `%APPDATA%\spotifast\data`.
+/// itself, which on Windows is `%APPDATA%\resonix\data`.
 pub fn installed_window_file() -> Option<PathBuf> {
-    eframe::storage_dir("spotifast").map(|dir| dir.join("app.ron"))
+    eframe::storage_dir("resonix").map(|dir| dir.join("app.ron"))
 }
 
 /// Gives a portable copy that has no window file yet a copy of `from`, so
@@ -334,7 +334,7 @@ mod tests {
     use super::*;
 
     fn folder(name: &str) -> PathBuf {
-        let dir = std::env::temp_dir().join(format!("spotifast-{name}-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("resonix-{name}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         dir
@@ -343,9 +343,7 @@ mod tests {
     /// #1144: a portable copy remembers its window in its own folder.
     #[test]
     fn a_portable_copy_keeps_its_window_file_in_its_folder() {
-        let dirs = AppDirs::from(fastframe_dirs::Dirs::inside(Path::new(
-            "/usb/spotifast-data",
-        )));
+        let dirs = AppDirs::from(fastframe_dirs::Dirs::inside(Path::new("/usb/resonix-data")));
         let portable = Found {
             dirs: dirs.clone(),
             portable: true,
@@ -353,7 +351,7 @@ mod tests {
         };
         assert_eq!(
             portable.window_file(),
-            Some(PathBuf::from("/usb/spotifast-data/state/app.ron"))
+            Some(PathBuf::from("/usb/resonix-data/state/app.ron"))
         );
         assert_eq!(Found::given(dirs).window_file(), installed_window_file());
     }
@@ -365,7 +363,7 @@ mod tests {
     fn a_portable_copy_starts_from_a_copy_of_the_window_file() {
         let dir = folder("window-file");
         let from = dir.join("roaming").join("app.ron");
-        let to = dir.join("spotifast-data").join("state").join("app.ron");
+        let to = dir.join("resonix-data").join("state").join("app.ron");
 
         adopt_window_file(&from, &to).unwrap();
         assert!(!to.exists(), "nothing to copy");
@@ -386,7 +384,7 @@ mod tests {
     fn the_log_says_which_folders_a_portable_copy_uses_and_why() {
         let installed = AppDirs::from(fastframe_dirs::Dirs::inside(Path::new("/user")));
         assert!(describe(&installed, &fastframe_dirs::Mode::Installed).is_none());
-        let folder = PathBuf::from("/usb/Spotifast/spotifast-data");
+        let folder = PathBuf::from("/usb/Resonix/resonix-data");
         let portable = AppDirs::from(fastframe_dirs::Dirs::inside(&folder));
         let (level, line) = describe(
             &portable,
@@ -398,7 +396,7 @@ mod tests {
         .unwrap();
         assert_eq!(level, log::Level::Info);
         assert!(
-            line.contains("spotifast-data") && line.contains("/user"),
+            line.contains("resonix-data") && line.contains("/user"),
             "{line}"
         );
         let (level, line) = describe(
@@ -419,8 +417,8 @@ mod tests {
     /// Installed copies, and every copy on Linux and macOS, keep the folders
     /// they always had.
     #[test]
-    fn the_per_user_folders_are_the_ones_spotifast_always_used() {
-        let Some(project) = directories::ProjectDirs::from("me", "paolino", "spotifast") else {
+    fn the_per_user_folders_are_the_ones_resonix_always_used() {
+        let Some(project) = directories::ProjectDirs::from("me", "paolino", "resonix") else {
             return;
         };
         let dirs = AppDirs::installed();

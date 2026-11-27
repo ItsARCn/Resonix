@@ -7,12 +7,12 @@ use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::time::{Duration, Instant};
 
-use spotifast::milkdrop::frames::Frames;
-use spotifast::milkdrop::shm::Ring;
+use resonix::milkdrop::frames::Frames;
+use resonix::milkdrop::shm::Ring;
 
 fn folder(name: &str) -> PathBuf {
     let dir = std::env::temp_dir().join(format!(
-        "spotifast-milkdrop-frames-{name}-{}",
+        "resonix-milkdrop-frames-{name}-{}",
         std::process::id()
     ));
     let _ = std::fs::remove_dir_all(&dir);
@@ -23,7 +23,7 @@ fn folder(name: &str) -> PathBuf {
 /// Starts the child with no display to reach, as under a service or over
 /// SSH: it must not need one.
 fn child(dir: &Path, stdin: Stdio) -> Child {
-    Command::new(env!("CARGO_BIN_EXE_spotifast"))
+    Command::new(env!("CARGO_BIN_EXE_resonix"))
         .env_remove("DISPLAY")
         .env_remove("WAYLAND_DISPLAY")
         .args(["--milkdrop-child", "--milkdrop-shm"])

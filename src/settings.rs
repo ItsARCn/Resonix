@@ -5,7 +5,7 @@ use std::path::Path;
 use serde::{Deserialize, Serialize};
 
 /// Local Library identity only. Never sent to Spotify as a context URI.
-pub const LIKED_SONGS_KEY: &str = "spotifast:liked-songs";
+pub const LIKED_SONGS_KEY: &str = "resonix:liked-songs";
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -306,7 +306,7 @@ pub struct Settings {
     )]
     pub system_theme_cache: Option<crate::theme::CustomTheme>,
     /// The palettes Follow system shows in light and in dark mode, each with
-    /// its last accepted colours; empty slots are Spotifast's own Light and
+    /// its last accepted colours; empty slots are Resonix's own Light and
     /// Dark, as before this setting existed.
     #[serde(skip_serializing_if = "fastframe_theme::Pair::is_default")]
     pub theme_pair: crate::theme::ThemePair,
@@ -344,7 +344,7 @@ pub struct Settings {
     /// An optional personal Spotify Web API application id. The shared
     /// application remains active for coverage when this is present.
     pub web_client_id: Option<String>,
-    /// Legacy reminder time, retained for older Spotifast versions.
+    /// Legacy reminder time, retained for older Resonix versions.
     pub personal_app_nudge_at: Option<String>,
     /// The listener has dismissed or followed the personal-app introduction.
     pub personal_app_intro_seen: bool,
@@ -363,7 +363,7 @@ pub struct Settings {
     pub tray_icon: TrayIcon,
     /// Show the interactive Now Playing widget when hovering over the MacBook notch.
     pub mac_notch_widget: bool,
-    /// macOS: keep Spotifast in the Dock and Cmd-Tab. Off makes it a
+    /// macOS: keep Resonix in the Dock and Cmd-Tab. Off makes it a
     /// menu-bar app, whose menu-bar icon is the way back (#837).
     pub mac_show_in_dock: bool,
     /// Ask GitHub once a day whether a newer release exists.
@@ -396,7 +396,7 @@ pub struct Settings {
     pub winamp_window: bool,
     /// Windows and X11: keep a taskbar button while the Winamp window is visible.
     pub winamp_show_taskbar: bool,
-    /// Windows and Linux: draw Spotifast's own title bar and window buttons
+    /// Windows and Linux: draw Resonix's own title bar and window buttons
     /// instead of the desktop frame.
     pub custom_titlebar: bool,
     /// Skin file or folder name. `None` selects the built-in skin.
@@ -628,7 +628,7 @@ impl Settings {
 
     /// The palette to show while the system is `dark` or light: the fixed
     /// one, else Follow system's choice for that appearance. `None` leaves
-    /// Spotifast's own Light or Dark.
+    /// Resonix's own Light or Dark.
     pub(crate) fn cached_palette(&self, dark: bool) -> Option<crate::theme::Palette> {
         if let Some(palette) = self.fixed_palette() {
             return Some(palette);
@@ -887,20 +887,6 @@ pub enum ProxyConfig {
 }
 
 impl ProxyConfig {
-    pub(crate) fn password_record(&self) -> Option<crate::credentials::ProxyPassword> {
-        match self {
-            Self::Http(manual) | Self::Socks(manual) => manual.password_record(),
-            _ => None,
-        }
-    }
-
-    pub(crate) fn restore_password(&mut self, saved: &crate::credentials::ProxyPassword) -> bool {
-        match self {
-            Self::Http(manual) | Self::Socks(manual) => manual.restore_password(saved),
-            _ => false,
-        }
-    }
-
     /// Librespot's CONNECT client only understands unauthenticated,
     /// plaintext HTTP proxies. Never give it a credential-bearing URL: the
     /// upstream client logs that URL at info level and does not send proxy
@@ -1224,7 +1210,7 @@ mod tests {
         assert!(single.theme_pair.is_default());
         assert_eq!(single.cached_palette(false), Some(nord));
         assert_eq!(single.cached_palette(true), Some(nord));
-        // Plain Follow system: Spotifast's own Light and Dark.
+        // Plain Follow system: Resonix's own Light and Dark.
         let follow: Settings = serde_json::from_str(r#"{"theme":"system"}"#).unwrap();
         assert_eq!(follow.cached_palette(false), None);
         assert_eq!(follow.cached_palette(true), None);
@@ -1242,7 +1228,7 @@ mod tests {
             })
         ));
         assert_eq!(paired.cached_palette(false), Some(latte));
-        assert_eq!(paired.cached_palette(true), None, "dark stays Spotifast's");
+        assert_eq!(paired.cached_palette(true), None, "dark stays Resonix's");
         let encoded = serde_json::to_string(&paired).unwrap();
         let decoded: Settings = serde_json::from_str(&encoded).unwrap();
         assert_eq!(decoded, paired);
@@ -1299,7 +1285,7 @@ mod tests {
     /// rather than dropped as unreadable and replaced with the defaults.
     #[test]
     fn a_settings_file_saved_with_a_byte_order_mark_keeps_its_preferences() {
-        let dir = std::env::temp_dir().join(format!("spotifast-bom-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("resonix-bom-{}", std::process::id()));
         let _ = std::fs::create_dir_all(&dir);
         let path = dir.join("settings.json");
         std::fs::write(
@@ -1319,7 +1305,7 @@ mod tests {
     #[test]
     fn a_saved_hardware_default_screen_rate_is_forgotten() {
         let dir =
-            std::env::temp_dir().join(format!("spotifast-screen-default-{}", std::process::id()));
+            std::env::temp_dir().join(format!("resonix-screen-default-{}", std::process::id()));
         let _ = std::fs::create_dir_all(&dir);
         let path = dir.join("settings.json");
         let load = |text: &str| {
@@ -1690,7 +1676,7 @@ mod tests {
 
     #[test]
     fn a_legacy_socks_url_becomes_socks_mode() {
-        let dir = std::env::temp_dir().join(format!("spotifast-proxy-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("resonix-proxy-{}", std::process::id()));
         let _ = std::fs::create_dir_all(&dir);
         let path = dir.join("settings.json");
         std::fs::write(
@@ -2102,7 +2088,7 @@ mod session_tests {
     #[test]
     fn a_new_session_atomically_replaces_the_previous_one() {
         let root = std::env::temp_dir().join(format!(
-            "spotifast-session-test-{}-{:?}",
+            "resonix-session-test-{}-{:?}",
             std::process::id(),
             std::thread::current().id()
         ));

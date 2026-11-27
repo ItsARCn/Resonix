@@ -152,19 +152,6 @@ pub(super) fn filtered_row(
     }
 }
 
-/// `filtered_row` for a row with no control.
-pub(super) fn filtered_note(
-    ui: &mut egui::Ui,
-    palette: &Palette,
-    needle: &str,
-    section: &str,
-    row: &RowText<'_>,
-) {
-    if row.matches(needle, section) {
-        widgets::setting_note(ui, palette, &row.title, &row.description);
-    }
-}
-
 /// `filtered_row` for a control that needs `control_width` points.
 fn filtered_row_sized(
     ui: &mut egui::Ui,
@@ -409,51 +396,6 @@ fn local_files_detail(app: &App) -> String {
         .replace("{folder}", &folder),
         // Translators: {folder} is a folder on this computer.
         None => gettext(locale, "Looking for songs in {folder}…").replace("{folder}", &folder),
-    }
-}
-
-/// Soloist supplies audio, while this separate Spotify approval supplies
-/// library features. Reuse the existing grant without changing players.
-pub(super) fn spotify_access_control(app: &mut App, ui: &mut egui::Ui) {
-    use crate::backend::LocalPlayback;
-    let locale = app.locale;
-    let palette = app.palette;
-    let (status, busy, action) = match &app.local_playback {
-        LocalPlayback::Ready { .. } => (gettext(locale, "Connected"), false, None),
-        LocalPlayback::Authorizing => (
-            gettext(locale, "Finish authorizing in your browser."),
-            true,
-            None,
-        ),
-        LocalPlayback::Connecting => (gettext(locale, "Connecting to Spotify…"), true, None),
-        LocalPlayback::WaitingForNetwork => (gettext(locale, "Waiting for network…"), true, None),
-        LocalPlayback::Unavailable => ("".into(), false, Some(gettext(locale, "Authorize"))),
-        LocalPlayback::Failed(_) => ("".into(), false, Some(gettext(locale, "Try again"))),
-    };
-    if let Some(action) = action {
-        let mut response = theme::pill_button(ui, &palette, &action, true);
-        if let LocalPlayback::Failed(error) = &app.local_playback {
-            response = response.on_hover_text(error);
-        }
-        if response.clicked() {
-            app.actions.push(Action::EnablePlayback);
-        }
-    } else {
-        ui.horizontal_wrapped(|ui| {
-            if busy {
-                ui.add(egui::Spinner::new().size(14.0).color(palette.secondary));
-            }
-            let galley = crate::bidi::layout(
-                ui.painter(),
-                &status,
-                theme::regular(13.0),
-                palette.secondary,
-                ui.available_width(),
-                usize::MAX,
-                None,
-            );
-            ui.add(egui::Label::new(galley));
-        });
     }
 }
 
@@ -2443,7 +2385,7 @@ fn start_with_computer_choices(
 
 /// What the row says under its title: how to finish a registration the
 /// system holds for approval, why a start in the tray opens the window
-/// while nothing keeps Spotifast there, or what the choices do.
+/// while nothing keeps Resonix there, or what the choices do.
 fn start_with_computer_detail(
     locale: crate::i18n::Locale,
     state: Option<fastframe_autostart::State>,
@@ -2528,7 +2470,7 @@ fn start_with_computer_row(
 /// A band's frequency the short way: 60, 170, 1K, 16K.
 /// The interface language: System first, then each language by its own name,
 /// so a reader can find theirs whatever language the app is showing.
-/// Follow system's palette for light or dark mode: Spotifast's own, or a
+/// Follow system's palette for light or dark mode: Resonix's own, or a
 /// palette file of that base.
 fn pair_picker(app: &mut App, ui: &mut egui::Ui, base: fastframe_theme::Base, name: &str) {
     let locale = app.locale;
@@ -2775,7 +2717,7 @@ mod tests {
         use crate::model::Action;
         use egui::accesskit::{Action as AccessibleAction, ActionRequest, TreeId};
         let root = std::env::temp_dir().join(format!(
-            "spotifast-eq-presets-{}-{}",
+            "resonix-eq-presets-{}-{}",
             std::process::id(),
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)

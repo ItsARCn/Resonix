@@ -54,7 +54,7 @@ fn no_window_body(
         fastframe_graphics::Cause::NoGraphicsDriver => gettext(
             locale,
             // Translators: Keep {url} exactly as written. It becomes the address
-            // of the Spotifast download page.
+            // of the Resonix download page.
             "Resonix needs a graphics driver with OpenGL 2.0 or newer, and this PC or virtual machine does not provide one. Install the graphics driver, or turn on GPU acceleration for the virtual machine. Open {url} to read more?",
         )
         .replace("{url}", help_url.unwrap_or(DOWNLOAD_PAGE)),

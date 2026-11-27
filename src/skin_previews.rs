@@ -561,7 +561,7 @@ mod tests {
 
     fn folder(name: &str) -> PathBuf {
         let path =
-            std::env::temp_dir().join(format!("spotifast-previews-{name}-{}", std::process::id()));
+            std::env::temp_dir().join(format!("resonix-previews-{name}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&path);
         std::fs::create_dir_all(&path).unwrap();
         path
@@ -683,11 +683,11 @@ mod tests {
         let _ = std::fs::remove_dir_all(&root);
     }
 
-    /// Every `.wmz` in `$SPOTIFAST_SKIN_SAMPLES`, when set, through the cards'
+    /// Every `.wmz` in `$RESONIX_SKIN_SAMPLES`, when set, through the cards'
     /// own path: stored, decoded and handed over as a picture.
     #[test]
     fn sample_skins_get_cards() {
-        let Ok(dir) = std::env::var("SPOTIFAST_SKIN_SAMPLES") else {
+        let Ok(dir) = std::env::var("RESONIX_SKIN_SAMPLES") else {
             return;
         };
         let root = folder("samples");
@@ -853,7 +853,7 @@ mod tests {
             );
             previews.textures += 1;
         }
-        previews.threads = start(std::env::temp_dir().join("spotifast-unused"), &ctx);
+        previews.threads = start(std::env::temp_dir().join("resonix-unused"), &ctx);
         previews.clock = 1_000;
         previews.entries.get_mut("0").unwrap().used = 1_000;
         previews.finish();

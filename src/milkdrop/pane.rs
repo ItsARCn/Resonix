@@ -107,7 +107,7 @@ impl Stream {
     pub fn new(tap: Arc<AudioTap>) -> Self {
         let name = |extension: &str| {
             std::env::temp_dir().join(format!(
-                "spotifast-milkdrop-pane-{}.{extension}",
+                "resonix-milkdrop-pane-{}.{extension}",
                 std::process::id()
             ))
         };
@@ -408,7 +408,7 @@ mod tests {
     /// A folder with a preset in it and, as the child, a shell script.
     fn stream(name: &str, script: &str) -> (Stream, PathBuf) {
         let dir = std::env::temp_dir().join(format!(
-            "spotifast-milkdrop-pane-{name}-{}",
+            "resonix-milkdrop-pane-{name}-{}",
             std::process::id()
         ));
         let _ = std::fs::remove_dir_all(&dir);

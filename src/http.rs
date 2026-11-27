@@ -71,6 +71,7 @@ pub fn build_client(proxy: &ProxyConfig) -> Result<reqwest::Client, String> {
 
 /// Collection mutations must not be replayed after an uncertain response.
 /// Keep the configured proxy and user agent, but disable retries and redirects.
+#[cfg(test)]
 pub(crate) fn build_collection_client(proxy: &ProxyConfig) -> Result<reqwest::Client, String> {
     client_builder(proxy)?
         .retry(reqwest::retry::never())
@@ -136,7 +137,7 @@ fn apply_blocking_proxy(
 }
 
 fn user_agent() -> &'static str {
-    concat!("Spotifast/", env!("CARGO_PKG_VERSION"))
+    concat!("Resonix/", env!("CARGO_PKG_VERSION"))
 }
 
 #[cfg(test)]
@@ -168,7 +169,7 @@ mod tests {
         let http = Http::default();
         let clone = http.clone();
         let replacement = reqwest::Client::builder()
-            .user_agent("spotifast-test")
+            .user_agent("resonix-test")
             .build()
             .unwrap();
         http.replace(replacement.clone());

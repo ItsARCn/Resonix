@@ -219,7 +219,7 @@ impl Capture {
         let worker = thread::spawn(move || {
             // SAFETY: the Arc and callbacks remain valid until the native call returns.
             let result = unsafe {
-                super::spotifast_soloist_audio(
+                super::resonix_soloist_audio(
                     std::process::id(),
                     Arc::as_ptr(&worker_shared).cast_mut().cast(),
                     control,

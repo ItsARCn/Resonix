@@ -75,7 +75,7 @@ pub struct Host {
 
 impl Host {
     pub fn new(tap: Arc<AudioTap>) -> Self {
-        let shm_path = std::env::temp_dir().join(format!("spotifast-milkdrop-{}.pcm", pid()));
+        let shm_path = std::env::temp_dir().join(format!("resonix-milkdrop-{}.pcm", pid()));
         Self {
             tap,
             shm_path,

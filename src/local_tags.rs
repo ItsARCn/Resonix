@@ -1,7 +1,7 @@
 //! Cover art and lyrics from a local file's own tags.
 //!
 //! Spotify knows a playlist's local file only by its artist, album, title
-//! and length, so it has no cover or lyrics for one. Spotifast plays the
+//! and length, so it has no cover or lyrics for one. Resonix plays the
 //! file itself from the local files folder, so it reads them from the file:
 //! the picture in its ID3 `APIC` frame or FLAC `PICTURE` block, and the
 //! words in a `.lrc` file beside it or its ID3 `USLT` frame or Vorbis
@@ -18,7 +18,7 @@ use symphonia::core::probe::Hint;
 
 /// The scheme of a local file's cover, which [`crate::images::ArtLoader`]
 /// reads from the file the rest of the URL names.
-pub const ART_SCHEME: &str = "spotifast-local-art:";
+pub const ART_SCHEME: &str = "resonix-local-art:";
 
 /// The cover URL of the local file at `path`.
 pub fn art_url(path: &Path) -> String {
@@ -187,8 +187,7 @@ pub(crate) mod tests {
     }
 
     fn folder(name: &str) -> PathBuf {
-        let dir =
-            std::env::temp_dir().join(format!("spotifast-local-{name}-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("resonix-local-{name}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         dir

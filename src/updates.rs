@@ -10,7 +10,7 @@
 //! AppImage someone else owns) still hears about each release, once its
 //! signed `checksums.txt` verifies ([`Updater::verify`]). The update window
 //! then says how it was installed and shows the command that updates it,
-//! with a Copy button ([`Notice`]); Spotifast never runs it.
+//! with a Copy button ([`Notice`]); Resonix never runs it.
 
 //!
 //! A copy that can replace itself updates on its own, by fastframe-update's
@@ -40,8 +40,8 @@ static UPDATER: UpdaterCache = Mutex::new(None);
 
 pub const CONFIG: UpdateConfig = UpdateConfig {
     macos: MacConfig {
-        bundle_ids: &["rocks.spotifast.Spotifast"],
-        executable_names: &["Spotifast"],
+        bundle_ids: &["rocks.resonix.Resonix"],
+        executable_names: &["Resonix"],
         legacy_bundle_names: &[],
     },
     // Releases publish an Ed25519 signature for checksums.txt. Require it
@@ -54,12 +54,12 @@ pub const CONFIG: UpdateConfig = UpdateConfig {
     ..UpdateConfig::new(
         "ItsARCn/Resonix",
         "Resonix",
-        "spotifast",
+        "resonix",
         env!("CARGO_PKG_VERSION"),
     )
 };
 
-/// An updater on Spotifast's HTTP client, through the configured proxy.
+/// An updater on Resonix's HTTP client, through the configured proxy.
 pub fn updater(proxy: &crate::settings::ProxyConfig) -> anyhow::Result<Updater> {
     cached_updater(&UPDATER, proxy, || {
         let builder = crate::http::blocking_builder(proxy).map_err(anyhow::Error::msg)?;
@@ -105,7 +105,7 @@ pub fn offer(release: &str, automatic: bool, newest_run: Option<&str>) -> Offer 
 
 /// At a start, before anything opens: hands the update an earlier run
 /// downloaded to the helper when it installs on its own. `true` when the
-/// helper took it and this process must quit now; it relaunches Spotifast
+/// helper took it and this process must quit now; it relaunches Resonix
 /// with `arguments` once the new version is in place.
 pub fn install_kept(automatic: bool, newest_run: Option<&str>, arguments: Vec<String>) -> bool {
     let updater = Updater::new(CONFIG, NoNetwork);
@@ -179,12 +179,12 @@ pub enum Route {
     /// The release's DEB package: there is no APT repository to upgrade
     /// from, so the new one is downloaded and installed with apt.
     Deb { download: String, command: String },
-    /// Fedora COPR (paolino/spotifast), which dnf upgrades from. `command`
+    /// Fedora COPR (paolino/resonix), which dnf upgrades from. `command`
     /// is `None` when dnf can't tell the package (no `/etc/os-release`).
     Copr { command: Option<String> },
     /// The release's own RPM package, installed from its address.
     Rpm { command: String },
-    /// The release's Flatpak bundle: no Flatpak remote publishes Spotifast
+    /// The release's Flatpak bundle: no Flatpak remote publishes Resonix
     /// yet, so `flatpak update` would find nothing.
     FlatpakBundle { download: String, command: String },
 }
@@ -271,14 +271,14 @@ fn route(
     match managed.manager {
         Manager::Apt if release_file => {
             let arch = if arch == "aarch64" { "arm64" } else { "amd64" };
-            let name = format!("spotifast_{version}_{arch}.deb");
+            let name = format!("resonix_{version}_{arch}.deb");
             Some(Route::Deb {
                 command: format!("sudo apt install {}", saved(&name)),
                 download: file(&name),
             })
         }
         Manager::Flatpak if release_file && arch == "x86_64" => {
-            let name = format!("spotifast-v{version}-x86_64.flatpak");
+            let name = format!("resonix-v{version}-x86_64.flatpak");
             Some(Route::FlatpakBundle {
                 command: format!("flatpak install --user {}", saved(&name)),
                 download: file(&name),
@@ -296,7 +296,7 @@ fn route(
                 Route::Rpm {
                     command: format!(
                         "sudo dnf install {}",
-                        file(&format!("spotifast-{version}-1.{arch}.rpm"))
+                        file(&format!("resonix-{version}-1.{arch}.rpm"))
                     ),
                 }
             } else {
@@ -450,7 +450,7 @@ mod tests {
         assert!(!install_kept(true, Some(VERSION), Vec::new()));
     }
 
-    /// Spotifast's releases stay on major version 0, so every release
+    /// Resonix's releases stay on major version 0, so every release
     /// installs on its own until the person turns it off or goes back.
     #[test]
     fn a_newer_release_installs_on_its_own_unless_the_person_went_back() {
@@ -495,11 +495,11 @@ mod tests {
     #[test]
     fn a_package_manager_with_a_repository_gets_its_own_command() {
         for (manager, command) in [
-            (Manager::Aur, "yay -Syu spotifast-bin"),
-            (Manager::Pacman, "sudo pacman -Syu spotifast"),
-            (Manager::HomebrewCask, "brew upgrade --cask spotifast"),
-            (Manager::Nix, "nix profile upgrade spotifast"),
-            (Manager::Cargo, "cargo install spotifast"),
+            (Manager::Aur, "yay -Syu resonix-bin"),
+            (Manager::Pacman, "sudo pacman -Syu resonix"),
+            (Manager::HomebrewCask, "brew upgrade --cask resonix"),
+            (Manager::Nix, "nix profile upgrade resonix"),
+            (Manager::Cargo, "cargo install resonix"),
         ] {
             let route = route(
                 managed(manager, command),
@@ -535,7 +535,7 @@ mod tests {
     #[test]
     fn copr_upgrades_through_dnf_and_the_release_rpm_installs_the_new_file() {
         let copr = || Some("Fedora Copr - user paolino".to_owned());
-        let dnf = "sudo dnf upgrade --refresh spotifast";
+        let dnf = "sudo dnf upgrade --refresh resonix";
         assert_eq!(
             route(managed(Manager::Dnf, dnf), "0.18.0", "x86_64", copr, saved),
             Some(Route::Copr {
@@ -567,7 +567,7 @@ mod tests {
                     saved
                 ),
                 Some(Route::Rpm {
-                    command: "sudo dnf install https://github.com/crmne/spotifast/releases/download/v0.18.0/spotifast-0.18.0-1.aarch64.rpm".into()
+                    command: "sudo dnf install https://github.com/ItsARCn/Resonix/releases/download/v0.18.0/resonix-0.18.0-1.aarch64.rpm".into()
                 }),
                 "{vendor:?}"
             );
@@ -579,7 +579,7 @@ mod tests {
         let deb = route(
             managed(
                 Manager::Apt,
-                "sudo apt update && sudo apt install --only-upgrade spotifast",
+                "sudo apt update && sudo apt install --only-upgrade resonix",
             ),
             "0.18.0",
             "aarch64",
@@ -591,13 +591,13 @@ mod tests {
             deb,
             Route::Deb {
                 download:
-                    "https://github.com/crmne/spotifast/releases/download/v0.18.0/spotifast_0.18.0_arm64.deb"
+                    "https://github.com/ItsARCn/Resonix/releases/download/v0.18.0/resonix_0.18.0_arm64.deb"
                         .into(),
-                command: "sudo apt install ~/Downloads/spotifast_0.18.0_arm64.deb".into(),
+                command: "sudo apt install ~/Downloads/resonix_0.18.0_arm64.deb".into(),
             }
         );
         let flatpak = route(
-            managed(Manager::Flatpak, "flatpak update rocks.spotifast.Spotifast"),
+            managed(Manager::Flatpak, "flatpak update rocks.resonix.Resonix"),
             "0.18.0",
             "x86_64",
             no_vendor,
@@ -607,17 +607,17 @@ mod tests {
         assert_eq!(
             flatpak.download(),
             Some(
-                "https://github.com/crmne/spotifast/releases/download/v0.18.0/spotifast-v0.18.0-x86_64.flatpak"
+                "https://github.com/ItsARCn/Resonix/releases/download/v0.18.0/resonix-v0.18.0-x86_64.flatpak"
             )
         );
         assert_eq!(
             flatpak.command(),
-            Some("flatpak install --user ~/Downloads/spotifast-v0.18.0-x86_64.flatpak")
+            Some("flatpak install --user ~/Downloads/resonix-v0.18.0-x86_64.flatpak")
         );
         // The release has no ARM Flatpak.
         assert_eq!(
             route(
-                managed(Manager::Flatpak, "flatpak update rocks.spotifast.Spotifast"),
+                managed(Manager::Flatpak, "flatpak update rocks.resonix.Resonix"),
                 "0.18.0",
                 "aarch64",
                 no_vendor,
@@ -647,7 +647,7 @@ mod tests {
         ] {
             assert!(!plain_version(bad), "{bad}");
             let deb = route(
-                managed(Manager::Apt, "sudo apt install --only-upgrade spotifast"),
+                managed(Manager::Apt, "sudo apt install --only-upgrade resonix"),
                 bad,
                 "x86_64",
                 no_vendor,

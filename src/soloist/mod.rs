@@ -1,4 +1,4 @@
-//! Optional, user-installed Spotify Soloist. Spotifast owns only the child it
+//! Optional, user-installed Spotify Soloist. Resonix owns only the child it
 //! started, and keeps its files and credentials separate from librespot.
 mod audio;
 pub mod install;
@@ -83,11 +83,11 @@ impl Failure {
             Self::InvalidKey => gettext(locale, "That doesn't look like a Soloist key."),
             Self::KeyStore => gettext(
                 locale,
-                "Spotifast couldn't reach your saved key. Unlock the system credential store and try again.",
+                "Resonix couldn't reach your saved key. Unlock the system credential store and try again.",
             ),
             Self::Download => gettext(
                 locale,
-                "Spotifast couldn't download Soloist. Check your connection and try again.",
+                "Resonix couldn't download Soloist. Check your connection and try again.",
             ),
             Self::NotReady => gettext(
                 locale,
@@ -295,7 +295,7 @@ async fn run(args: Config, client: Client, mut stopped: watch::Receiver<bool>) -
             "{:x}",
             Sha256::digest(format!("{instance}:{}", data.to_string_lossy()).as_bytes())
         );
-        let name = format!("Spotifast Soloist ({})", &suffix[..8]);
+        let name = format!("Resonix Soloist ({})", &suffix[..8]);
         // A build that kept crashing here is never started again. The
         // previous build stands in if the newer ones are bad.
         let trial = install::trial(&root).await;
@@ -434,7 +434,7 @@ async fn bad_now(root: &std::path::Path, build: &install::Build) -> Result<bool>
         );
     } else {
         log::warn!(
-            "Soloist {} crashed soon after starting; once more in a row and Spotifast stops using it",
+            "Soloist {} crashed soon after starting; once more in a row and Resonix stops using it",
             build.label()
         );
     }
@@ -548,7 +548,7 @@ async fn process(player: Player<'_>, mut stopped: watch::Receiver<bool>) -> Resu
     // Soloist currently requires the key in argv. Never log this command or
     // the child's output: it stays in the private data directory, without the
     // key. See the documented upstream limitation.
-    // The bond ends the child with Spotifast however Spotifast exits, and
+    // The bond ends the child with Resonix however Resonix exits, and
     // is let go only after the child has been reaped below.
     let (mut child, bond) = owned::spawn(command).await.context(Failure::NotReady)?;
     let started = Instant::now();
@@ -818,7 +818,7 @@ fn note_limit(exit: &std::process::ExitStatus) {
         log::warn!(
             "Soloist was killed with {signal}. If nothing else stopped it, a realtime audio \
              thread ran {} ms without sleeping and the kernel's RLIMIT_RTTIME ended it, \
-             rather than let it hold a CPU; Spotifast starts Soloist again",
+             rather than let it hold a CPU; Resonix starts Soloist again",
             priority::RT_TIME_LIMIT_US / 1000
         );
     }
@@ -902,7 +902,7 @@ async fn copy_output(
     }
 }
 
-/// Stops a Soloist that an earlier Spotifast left running. It still holds the
+/// Stops a Soloist that an earlier Resonix left running. It still holds the
 /// data directory's lock, so a new player would exit before it is ready
 /// (#1140). Only a process started from one of our own builds is stopped: the
 /// recorded PID may since belong to an unrelated program.
@@ -934,7 +934,7 @@ fn reclaim(builds: &std::path::Path, data: &std::path::Path) {
     if !ours || !process.kill() {
         return;
     }
-    log::info!("Stopped a Soloist left running by an earlier Spotifast");
+    log::info!("Stopped a Soloist left running by an earlier Resonix");
     let deadline = Instant::now() + Duration::from_secs(2);
     while !exited(&mut system, pid) && Instant::now() < deadline {
         std::thread::sleep(Duration::from_millis(10));

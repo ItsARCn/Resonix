@@ -32,7 +32,7 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
             color: palette.shadow,
         });
     egui::Window::new(title.as_ref())
-        .id(egui::Id::new("spotifast-update"))
+        .id(egui::Id::new("resonix-update"))
         .title_bar(false)
         .resizable(false)
         .auto_sized()
@@ -186,7 +186,7 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                                     ui,
                                     &palette,
                                     locale,
-                                    egui::Id::new("spotifast-update-command"),
+                                    egui::Id::new("resonix-update-command"),
                                     command,
                                     12.5,
                                     crate::ui::widgets::CopyFit::OneLine,

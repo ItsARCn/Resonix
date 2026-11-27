@@ -10,7 +10,7 @@ use crate::settings::ProxyMode;
 use crate::theme;
 
 /// Where listeners create their own Spotify app. Shown as a link they
-/// click; Spotifast never opens it by itself.
+/// click; Resonix never opens it by itself.
 pub const DASHBOARD_URL: &str = "https://developer.spotify.com/dashboard";
 
 /// The width of the card on its own, and at most of each column beside
@@ -153,7 +153,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui, connecting: bool) {
                 // Translators: {version} is the app's version number, such as 1.2.0.
                 gettext(
                     app.locale,
-                    "Spotifast {version} • not affiliated with Spotify",
+                    "Resonix {version} • not affiliated with Spotify",
                 )
                 .replace("{version}", env!("CARGO_PKG_VERSION")),
                 theme::regular(11.5),
@@ -179,7 +179,7 @@ fn problem_text(locale: crate::i18n::Locale, problem: SignInProblem) -> String {
         ),
         SignInProblem::SharedRetired => gettext(
             locale,
-            "Spotify no longer accepts the shared sign-in Spotifast used before. Register Spotifast to keep listening.",
+            "Spotify no longer accepts the shared sign-in Resonix used before. Register Resonix to keep listening.",
         ),
         SignInProblem::Expired => {
             gettext(locale, "Your Spotify sign-in expired. Please sign in again.")
@@ -209,7 +209,7 @@ fn sign_in_column(app: &mut App, ui: &mut egui::Ui, connecting: bool, beside: Op
     ui.add_space(6.0);
     theme::text(
         ui,
-        "Spotifast",
+        "Resonix",
         theme::bold(if steps { 26.0 } else { 30.0 }),
         palette.text,
     );
@@ -318,7 +318,7 @@ fn sign_in_column(app: &mut App, ui: &mut egui::Ui, connecting: bool, beside: Op
                 ui,
                 gettext(
                     locale,
-                    "Sign in through your browser. Spotifast never sees your password. Local playback needs Spotify Premium.",
+                    "Sign in through your browser. Resonix never sees your password. Local playback needs Spotify Premium.",
                 ),
                 theme::regular(12.5),
                 palette.secondary,
@@ -327,7 +327,7 @@ fn sign_in_column(app: &mut App, ui: &mut egui::Ui, connecting: bool, beside: Op
                 ui.add_space(4.0);
                 if theme::link(
                     ui,
-                    gettext(locale, "How to register Spotifast"),
+                    gettext(locale, "How to register Resonix"),
                     theme::regular(13.0),
                     palette.secondary,
                 )
@@ -442,7 +442,7 @@ pub(super) fn step(
     ui.add_space(4.0);
 }
 
-/// How to create the app Spotifast signs in with, the same steps the
+/// How to create the app Resonix signs in with, the same steps the
 /// guide gives (make-it-even-faster.md, Make a Spotify app).
 fn setup_steps(app: &mut App, ui: &mut egui::Ui, width: f32) {
     let palette = app.palette;
@@ -453,7 +453,7 @@ fn setup_steps(app: &mut App, ui: &mut egui::Ui, width: f32) {
     ui.add_space(4.0);
     theme::text(
         ui,
-        gettext(locale, "Register Spotifast"),
+        gettext(locale, "Register Resonix"),
         theme::bold(18.0),
         palette.text,
     );
@@ -461,7 +461,7 @@ fn setup_steps(app: &mut App, ui: &mut egui::Ui, width: f32) {
         ui,
         gettext(
             locale,
-            "Spotify asks you to register Spotifast once, on an account with Premium. It takes about two minutes and gives you a Client ID.",
+            "Spotify asks you to register Resonix once, on an account with Premium. It takes about two minutes and gives you a Client ID.",
         ),
         theme::regular(13.0),
         palette.secondary,
@@ -626,11 +626,6 @@ pub(super) fn big_button(ui: &mut egui::Ui, app: &App, label: &str) -> bool {
     big_button_painted(ui, app, label, false)
 }
 
-/// `big_button` whose label stays readable while it is disabled.
-pub(super) fn step_button(ui: &mut egui::Ui, app: &App, label: &str) -> bool {
-    big_button_painted(ui, app, label, true)
-}
-
 fn big_button_painted(ui: &mut egui::Ui, app: &App, label: &str, readable: bool) -> bool {
     let palette = app.palette;
     let muted = readable && !ui.is_enabled();
@@ -673,10 +668,8 @@ mod tests {
         let ctx = egui::Context::default();
         ctx.enable_accesskit();
         theme::install(&ctx);
-        let root = std::env::temp_dir().join(format!(
-            "spotifast-proxy-short-login-{}",
-            std::process::id()
-        ));
+        let root =
+            std::env::temp_dir().join(format!("resonix-proxy-short-login-{}", std::process::id()));
         let mut app = App::new(
             &Waker::default(),
             AppDirs {

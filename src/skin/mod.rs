@@ -2,7 +2,7 @@
 //!
 //! A `.wsz` file contains bitmap sprite sheets and two small text files. This
 //! module decodes them to RGBA textures. [`sprites`] defines source coordinates;
-//! [`layout`] defines window positions. Missing files fall back to Spotifast's
+//! [`layout`] defines window positions. Missing files fall back to Resonix's
 //! built-in classic skin. Modern `.wal` skins are unsupported. A Windows Media
 //! Player skin (`.wmz`) is read by [`wmp`] and carried on the same type.
 
@@ -298,14 +298,14 @@ impl Skin {
         })
     }
 
-    /// The skin Spotifast ships, drawn for it and packed as a `.wsz` like
+    /// The skin Resonix ships, drawn for it and packed as a `.wsz` like
     /// any other, so it goes through the same reader. It has every sheet,
     /// so any other skin's gaps can be filled from it.
     pub fn builtin() -> Arc<Skin> {
         BUILTIN.clone()
     }
 
-    /// The Windows Media Player skin Spotifast ships, read as any other is.
+    /// The Windows Media Player skin Resonix ships, read as any other is.
     pub fn ribbon() -> Result<Skin, SkinError> {
         Skin::from_archive(RIBBON, RIBBON_ARCHIVE)
     }
@@ -449,10 +449,10 @@ pub const WIDE: &str = "Resonix Wide";
 /// The skins the app ships, in the order they are listed.
 pub const SHIPPED: [&str; 2] = [RIBBON, WIDE];
 
-const BUILTIN_ARCHIVE: &[u8] = include_bytes!("../../assets/skins/spotifast.wsz");
+const BUILTIN_ARCHIVE: &[u8] = include_bytes!("../../assets/skins/resonix.wsz");
 /// Cut and packed by `examples/ribbon_skin.rs`.
-const RIBBON_ARCHIVE: &[u8] = include_bytes!("../../assets/skins/spotifast-ribbon.wmz");
-const WIDE_ARCHIVE: &[u8] = include_bytes!("../../assets/skins/spotifast-wide.wmz");
+const RIBBON_ARCHIVE: &[u8] = include_bytes!("../../assets/skins/resonix-ribbon.wmz");
+const WIDE_ARCHIVE: &[u8] = include_bytes!("../../assets/skins/resonix-wide.wmz");
 
 static BUILTIN: LazyLock<Arc<Skin>> = LazyLock::new(|| {
     Arc::new(Skin::from_archive("Resonix", BUILTIN_ARCHIVE).expect("the built-in skin reads"))
@@ -668,7 +668,7 @@ mod tests {
 
     #[test]
     fn a_folder_of_bitmaps_is_a_skin_too() {
-        let dir = std::env::temp_dir().join(format!("spotifast-skin-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("resonix-skin-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         std::fs::write(dir.join("MAIN.BMP"), png(275, 116, [7, 7, 7])).unwrap();
         std::fs::write(dir.join("readme.txt"), b"a folder skin").unwrap();
@@ -680,7 +680,7 @@ mod tests {
 
     #[test]
     fn a_folder_skin_is_read_from_the_folder_it_was_unpacked_into() {
-        let dir = std::env::temp_dir().join(format!("spotifast-nested-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("resonix-nested-{}", std::process::id()));
         let inner = dir.join("Some Skin");
         std::fs::create_dir_all(&inner).unwrap();
         std::fs::write(inner.join("MAIN.BMP"), png(275, 116, [9, 9, 9])).unwrap();
@@ -693,7 +693,7 @@ mod tests {
 
     #[test]
     fn shallower_skin_files_win_across_sibling_subtrees() {
-        let dir = std::env::temp_dir().join(format!("spotifast-skin-depth-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("resonix-skin-depth-{}", std::process::id()));
         for folder in ["a/nested", "b", "c"] {
             std::fs::create_dir_all(dir.join(folder)).unwrap();
         }
@@ -710,7 +710,7 @@ mod tests {
 
     #[test]
     fn unpacked_skin_search_stops_at_its_depth_limit() {
-        let dir = std::env::temp_dir().join(format!("spotifast-skin-limit-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("resonix-skin-limit-{}", std::process::id()));
         let mut inner = dir.clone();
         for _ in 0..=MAX_SKIN_DEPTH {
             inner = inner.join("nested");
@@ -731,7 +731,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn unpacked_skin_search_does_not_follow_file_or_directory_links() {
-        let dir = std::env::temp_dir().join(format!("spotifast-skin-links-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("resonix-skin-links-{}", std::process::id()));
         let chosen = dir.join("chosen");
         let outside = dir.join("outside");
         std::fs::create_dir_all(&chosen).unwrap();
@@ -804,7 +804,7 @@ mod tests {
 
     #[test]
     fn a_zip_is_listed_as_the_kind_of_skin_it_holds() {
-        let root = std::env::temp_dir().join(format!("spotifast-kinds-{}", std::process::id()));
+        let root = std::env::temp_dir().join(format!("resonix-kinds-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&root);
         std::fs::create_dir_all(&root).unwrap();
         let player = zip::write(&[
@@ -845,7 +845,7 @@ mod tests {
     #[test]
     fn an_unpacked_windows_media_player_skin_is_listed_and_read() {
         // A folder of its own to list, not the whole temporary directory.
-        let root = std::env::temp_dir().join(format!("spotifast-wmp-{}", std::process::id()));
+        let root = std::env::temp_dir().join(format!("resonix-wmp-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&root);
         let dir = root.join("player");
         std::fs::create_dir_all(dir.join("art")).unwrap();
@@ -864,11 +864,11 @@ mod tests {
         assert_eq!(skin.wmp.as_ref().map(|wmp| wmp.height), Some(30));
     }
 
-    /// Loads every skin in `$SPOTIFAST_SKIN_SAMPLES`, when set, to check
+    /// Loads every skin in `$RESONIX_SKIN_SAMPLES`, when set, to check
     /// the reader against real files without shipping any.
     #[test]
     fn sample_skins_load() {
-        let Ok(dir) = std::env::var("SPOTIFAST_SKIN_SAMPLES") else {
+        let Ok(dir) = std::env::var("RESONIX_SKIN_SAMPLES") else {
             return;
         };
         let mut seen = 0;

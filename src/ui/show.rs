@@ -489,7 +489,7 @@ mod tests {
 
     fn test_app() -> App {
         let root = std::env::temp_dir().join(format!(
-            "spotifast-show-test-{}-{}",
+            "resonix-show-test-{}-{}",
             std::process::id(),
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)

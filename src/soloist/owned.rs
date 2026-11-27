@@ -1,7 +1,7 @@
-//! Starts the Soloist child so that it cannot outlive Spotifast.
+//! Starts the Soloist child so that it cannot outlive Resonix.
 //!
 //! A normal quit stops the child itself, and `kill_on_drop` covers a dropped
-//! task. Neither runs when Spotifast is killed (SIGKILL, a crash, Task
+//! task. Neither runs when Resonix is killed (SIGKILL, a crash, Task
 //! Manager, a SIGTERM before a handler sees it), and Soloist then kept
 //! running as an orphan that held its data directory's lock. Each platform
 //! ties the child to this process in the kernel instead:
@@ -9,11 +9,11 @@
 //! - Linux: the child asks for SIGKILL when its parent dies
 //!   (`PR_SET_PDEATHSIG`), from one thread that lives as long as the process.
 //! - Windows: the child joins a job object that kills its processes when
-//!   Spotifast's handle to it closes, which the system does however the
+//!   Resonix's handle to it closes, which the system does however the
 //!   process ends.
 //! - macOS has neither, so a small `/bin/sh` watcher holds the reading end
-//!   of a pipe only Spotifast writes to, and kills the child when the pipe
-//!   closes with Spotifast.
+//!   of a pipe only Resonix writes to, and kills the child when the pipe
+//!   closes with Resonix.
 use std::io;
 use tokio::process::{Child, Command};
 
@@ -93,7 +93,7 @@ fn die_with_parent(command: &mut Command) {
             {
                 return Err(io::Error::last_os_error());
             }
-            // Spotifast may have died between the fork and the prctl, before
+            // Resonix may have died between the fork and the prctl, before
             // there was a death to be told of: the child has been handed to
             // another parent by now, so it must not go on.
             if libc::getppid() != parent {
@@ -111,7 +111,7 @@ fn die_with_parent(command: &mut Command) {
 /// and go: a `spawn_blocking` thread expires after ten idle seconds, and a
 /// worker that enters `block_in_place` gives its place to a new thread and
 /// then becomes one of those. A child forked there would be killed while
-/// Spotifast still ran. This thread waits on a queue held in a static, so it
+/// Resonix still ran. This thread waits on a queue held in a static, so it
 /// lasts until the process ends, and only then is the child told.
 #[cfg(target_os = "linux")]
 mod spawner {
@@ -209,11 +209,11 @@ mod job {
 /// A `/bin/sh` that kills the child once this process is gone.
 ///
 /// It reads its standard input, a pipe whose writing end only this process
-/// holds (Rust opens pipes close-on-exec), so the read ends when Spotifast
+/// holds (Rust opens pipes close-on-exec), so the read ends when Resonix
 /// does, whether it quit, crashed or was killed. It kills only the process
-/// that started when the child did: a PID freed by an exit Spotifast has
+/// that started when the child did: a PID freed by an exit Resonix has
 /// reaped may since belong to an unrelated program. It runs in a process
-/// group of its own, so a terminal's Ctrl+C reaches Spotifast, not it.
+/// group of its own, so a terminal's Ctrl+C reaches Resonix, not it.
 #[cfg(target_os = "macos")]
 pub struct Watcher {
     process: std::process::Child,
@@ -243,7 +243,7 @@ read -r _
     }
 }
 
-/// Spotifast stops the child itself before it lets the bond go, so the
+/// Resonix stops the child itself before it lets the bond go, so the
 /// watcher has nothing left to do; it is stopped and reaped rather than
 /// left to find that out.
 #[cfg(target_os = "macos")]
@@ -260,7 +260,7 @@ mod tests {
 
     /// Which part of `a_child_dies_with_its_killed_parent` a re-run of this
     /// test binary plays.
-    const ROLE: &str = "SPOTIFAST_OWNED_TEST_ROLE";
+    const ROLE: &str = "RESONIX_OWNED_TEST_ROLE";
     const STAND_IN: &str = "soloist::owned::tests::stand_in";
 
     fn stand_in_command(role: &str) -> std::process::Command {
@@ -274,7 +274,7 @@ mod tests {
         command
     }
 
-    /// A stand-in Spotifast starts a stand-in Soloist the way Spotifast
+    /// A stand-in Resonix starts a stand-in Soloist the way Resonix
     /// does and is then killed with SIGKILL (TerminateProcess on Windows),
     /// so no code of its own runs: the stand-in Soloist must go with it.
     /// It must not go earlier, with the short-lived thread that asked for
@@ -296,7 +296,7 @@ mod tests {
             }
             assert!(
                 parent.try_wait().unwrap().is_none(),
-                "the stand-in Spotifast exited before it started its child"
+                "the stand-in Resonix exited before it started its child"
             );
             assert!(Instant::now() < deadline, "the stand-in never started");
             std::thread::sleep(Duration::from_millis(20));

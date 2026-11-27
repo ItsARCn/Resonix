@@ -22,6 +22,7 @@ use sha1::{Digest, Sha1};
 
 const SERVICE: &str = "_spotify-connect._tcp.local.";
 /// Spotify's ZeroConf login uses this fixed initialisation vector.
+#[cfg(test)]
 const FIXED_IV: [u8; 16] = [
     253, 81, 222, 19, 70, 203, 45, 89, 141, 68, 210, 240, 93, 20, 76, 30,
 ];

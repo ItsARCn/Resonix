@@ -1,4 +1,4 @@
-//! A polite request to end the process quits Spotifast the way Quit does,
+//! A polite request to end the process quits Resonix the way Quit does,
 //! so it stops Soloist and saves its state instead of dying mid-write.
 //!
 //! The requests are SIGTERM (`kill`, a logout, systemd stopping the
@@ -74,7 +74,7 @@ async fn watch(waker: crate::backend::Waker) {
         });
         let ((number, name), _, _) = futures_util::future::select_all(arrivals).await;
         if REQUESTED.swap(true, Ordering::AcqRel) {
-            log::warn!("{name} again before Spotifast quit: ending it now");
+            log::warn!("{name} again before Resonix quit: ending it now");
             std::process::exit(128 + number);
         }
         log::info!("{name}: quitting");
@@ -98,7 +98,7 @@ mod tests {
     use std::time::{Duration, Instant};
 
     const STAND_IN: &str = "terminate::tests::stand_in";
-    const ROLE: &str = "SPOTIFAST_TERMINATE_TEST_ROLE";
+    const ROLE: &str = "RESONIX_TERMINATE_TEST_ROLE";
 
     /// The listener is process-wide, so a re-run of this test binary plays
     /// the app: the first SIGTERM asks it to quit and leaves it running, a

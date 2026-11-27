@@ -14,18 +14,17 @@ fn main() -> anyhow::Result<()> {
     for run in 1..=runs {
         let start = Instant::now();
         let first = AtomicU64::new(u64::MAX);
-        let receivers =
-            spotifast::zeroconf::discover_with_updates(Duration::from_secs(3), |rows| {
-                if !batch && !rows.is_empty() {
-                    let _ = first.compare_exchange(
-                        u64::MAX,
-                        start.elapsed().as_millis() as u64,
-                        Ordering::Relaxed,
-                        Ordering::Relaxed,
-                    );
-                }
-            })?;
-        let receivers = spotifast::zeroconf::resolve_receivers(receivers)?;
+        let receivers = resonix::zeroconf::discover_with_updates(Duration::from_secs(3), |rows| {
+            if !batch && !rows.is_empty() {
+                let _ = first.compare_exchange(
+                    u64::MAX,
+                    start.elapsed().as_millis() as u64,
+                    Ordering::Relaxed,
+                    Ordering::Relaxed,
+                );
+            }
+        })?;
+        let receivers = resonix::zeroconf::resolve_receivers(receivers)?;
         let final_ms = start.elapsed().as_millis();
         if batch && receivers.iter().any(|row| row.cast) {
             first.store(final_ms as u64, Ordering::Relaxed);

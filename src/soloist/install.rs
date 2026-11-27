@@ -79,7 +79,7 @@ pub const CRASH_LIMIT: u32 = 2;
 /// any build it could still be serving.
 const BAD_LIMIT: usize = 8;
 
-/// What Spotifast has learned about builds on this computer, in `trial.json`.
+/// What Resonix has learned about builds on this computer, in `trial.json`.
 /// A build is on trial until it plays or keeps running for `TRIAL`; one that
 /// crashes early `CRASH_LIMIT` times in a row is bad, and never used again.
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq)]

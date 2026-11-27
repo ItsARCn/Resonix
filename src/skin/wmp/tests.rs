@@ -607,12 +607,12 @@ fn a_negative_z_child_sits_under_the_background() {
     assert_eq!(order, [9, 0, 1, 2], "black ground, effects, picture, text");
 }
 
-/// Loads every `.wmz` in `$SPOTIFAST_SKIN_SAMPLES`, when set, and starts it,
+/// Loads every `.wmz` in `$RESONIX_SKIN_SAMPLES`, when set, and starts it,
 /// to check the engine against real files without shipping any. A skin may
 /// fail to load only because it is no skin; none may panic.
 #[test]
 fn sample_skins_run() {
-    let Ok(dir) = std::env::var("SPOTIFAST_SKIN_SAMPLES") else {
+    let Ok(dir) = std::env::var("RESONIX_SKIN_SAMPLES") else {
         return;
     };
     for entry in std::fs::read_dir(dir).unwrap() {
@@ -861,10 +861,10 @@ fn a_custom_slider_drawn_against_its_map_follows_the_pointer() {
 }
 
 /// Lists which real strips run backwards, for
-/// `SPOTIFAST_WMZ_SAMPLES=folder cargo test sample_strips -- --nocapture`.
+/// `RESONIX_WMZ_SAMPLES=folder cargo test sample_strips -- --nocapture`.
 #[test]
 fn sample_strips() {
-    let Ok(folder) = std::env::var("SPOTIFAST_WMZ_SAMPLES") else {
+    let Ok(folder) = std::env::var("RESONIX_WMZ_SAMPLES") else {
         return;
     };
     let mut paths: Vec<_> = std::fs::read_dir(folder)

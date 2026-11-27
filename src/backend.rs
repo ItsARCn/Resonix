@@ -549,7 +549,7 @@ pub enum AutostartRequest {
 }
 
 pub fn autostart() -> fastframe_autostart::Autostart {
-    fastframe_autostart::Autostart::new("spotifast", "Spotifast")
+    fastframe_autostart::Autostart::new("resonix", "Resonix")
 }
 
 pub enum Command {

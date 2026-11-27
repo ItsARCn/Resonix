@@ -41,7 +41,7 @@ struct Capture {
     ~Capture() { if (client) client->Stop(); }
 };
 }
-extern "C" int spotifast_soloist_audio(uint32_t pid, void *context, Control control, Process process, Event event) {
+extern "C" int resonix_soloist_audio(uint32_t pid, void *context, Control control, Process process, Event event) {
     HRESULT com = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
     if (FAILED(com)) return static_cast<int>(com);
     int result = 0;

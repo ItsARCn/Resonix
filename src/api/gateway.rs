@@ -262,6 +262,7 @@ impl ApiGateway {
 
     /// Psst's Home section query also carries a Web API grant as `sp_t`.
     /// Prefer the personal grant without waiting for shared verification.
+    #[cfg(test)]
     pub(crate) async fn home_context_token(
         &self,
         playback_account: &str,
@@ -286,6 +287,7 @@ impl ApiGateway {
     }
 
     /// Rejects a grant replaced or reauthorized while its token was pending.
+    #[cfg(test)]
     fn home_context_client_matches(
         &self,
         source: ApiSource,
@@ -336,17 +338,8 @@ impl ApiGateway {
             && !self.shared.client().cooling_down().await
     }
 
-    /// Reuse configured HTTP transport only after verifying the account.
-    /// Pathfinder itself receives the playback session's Login5 credentials.
-    pub(crate) fn prerelease_http_client(&self) -> Option<Arc<ApiClient>> {
-        [ApiSource::Personal, ApiSource::Shared]
-            .into_iter()
-            .find(|source| matches!(self.state(*source), SessionState::Ready { .. }))
-            .map(|source| self.verification_client(source))
-    }
-
     /// Whether a shared grant is signed in or being restored. Only listeners
-    /// who signed in before Spotifast stopped offering shared access have one.
+    /// who signed in before Resonix stopped offering shared access have one.
     pub fn has_shared(&self) -> bool {
         self.state(ApiSource::Shared) != SessionState::Unavailable
     }
@@ -535,7 +528,7 @@ mod tests {
     }
 
     fn provider(name: &str, source: ApiSource) -> TokenProvider {
-        let path = std::env::temp_dir().join(format!("spotifast-{name}-unused-token"));
+        let path = std::env::temp_dir().join(format!("resonix-{name}-unused-token"));
         let store = crate::credentials::Store::in_memory(crate::paths::AppDirs {
             config: path.join("config"),
             state: path.join("state"),

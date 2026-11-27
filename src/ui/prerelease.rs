@@ -1,4 +1,4 @@
-//! Native counterpart of Spotify's countdown page, inside Spotifast's shell.
+//! Native counterpart of Spotify's countdown page, inside Resonix's shell.
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -596,7 +596,7 @@ mod tests {
     #[test]
     fn clicking_a_repeated_preview_track_starts_that_occurrence() {
         let root = std::env::temp_dir().join(format!(
-            "spotifast-prerelease-occurrence-{}",
+            "resonix-prerelease-occurrence-{}",
             std::process::id()
         ));
         let ctx = egui::Context::default();

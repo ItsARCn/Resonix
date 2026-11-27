@@ -12,7 +12,7 @@
 //! small glyphs and the slider parts are drawn, being a few pixels each.
 //!
 //! `cargo run --example ribbon_skin` regenerates
-//! `assets/skins/spotifast-ribbon.wmz` and `spotifast-wide.wmz` from this file
+//! `assets/skins/resonix-ribbon.wmz` and `resonix-wide.wmz` from this file
 //! and from `assets/skins/ribbon` and `assets/skins/wide`, which hold each
 //! skin's definition and art, the first the script they share as well. A
 //! definition's `@bands` line is filled in here.
@@ -22,7 +22,7 @@ use std::collections::VecDeque;
 use std::path::PathBuf;
 
 use image::{Rgba, RgbaImage};
-use spotifast::skin::zip;
+use resonix::skin::zip;
 
 /// How one skin differs from the other.
 struct Design {
@@ -56,7 +56,7 @@ struct Design {
 
 const TALL: Design = Design {
     folder: "ribbon",
-    archive: "spotifast-ribbon.wmz",
+    archive: "resonix-ribbon.wmz",
     width: 240,
     height: 420,
     pane: (62, 75, 126),
@@ -78,7 +78,7 @@ const TALL: Design = Design {
 
 const WIDE: Design = Design {
     folder: "wide",
-    archive: "spotifast-wide.wmz",
+    archive: "resonix-wide.wmz",
     width: 460,
     height: 180,
     pane: (20, 44, 104),

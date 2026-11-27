@@ -1,4 +1,4 @@
-use spotifast::{app, backend, paths, settings, single_instance, util};
+use resonix::{app, backend, paths, settings, single_instance, util};
 
 use clap::{CommandFactory, FromArgMatches, Parser};
 use fastframe_shell::window::Geometry;
@@ -12,7 +12,7 @@ struct Cli {
     control: Option<Control>,
 
     /// A Spotify link to open: spotify:track:…, or an open.spotify.com
-    /// address. The running Spotifast opens it when there is one, which
+    /// address. The running Resonix opens it when there is one, which
     /// is how the desktop hands links over.
     #[arg(value_name = "LINK")]
     link: Option<String>,
@@ -68,7 +68,7 @@ struct Cli {
     /// Requires demo mode.
     #[cfg(feature = "demo")]
     #[arg(long, value_enum)]
-    demo_language: Option<spotifast::i18n::Locale>,
+    demo_language: Option<resonix::i18n::Locale>,
 
     /// Write a PNG of the demo window to this path and exit. Implies
     /// `--demo`. Without `--demo-size`, the shot is the window's own frame
@@ -299,7 +299,7 @@ fn write_reply(out: &mut impl std::io::Write, text: &str) -> i32 {
 /// sandbox's app id, which Flatpak always sets in `FLATPAK_ID`.
 #[cfg(target_os = "linux")]
 fn desktop_entry() -> String {
-    fastframe_now_playing::desktop_entry("spotifast")
+    fastframe_now_playing::desktop_entry("resonix")
 }
 
 /// The `nowplaying` snapshot as one human-readable line.
@@ -326,7 +326,7 @@ fn format_now_playing(snapshot: &str) -> String {
 }
 
 /// The `devices` snapshot as one line per device, the active one marked.
-/// The id comes first because `spotifast transfer` is what it is for.
+/// The id comes first because `resonix transfer` is what it is for.
 fn format_devices(snapshot: &str) -> String {
     let Ok(devices) = serde_json::from_str::<Vec<serde_json::Value>>(snapshot) else {
         return String::new();
@@ -355,16 +355,16 @@ pub(crate) fn run() -> eframe::Result<()> {
     // First of all: `--apply-update <job>` makes this process the update
     // helper, which installs and exits; otherwise the receipt and error an
     // update relaunch carries are taken out of the arguments.
-    let launch = fastframe_update::intercept(&spotifast::updates::CONFIG);
+    let launch = fastframe_update::intercept(&resonix::updates::CONFIG);
     // Before any output is listed or opened.
-    spotifast::sink::name_in_mixers();
+    resonix::sink::name_in_mixers();
     // A MilkDrop child launch is a bare visualiser window, not the app: it has
     // its own event loop and OpenGL context, reads the sound from a shared
     // buffer, and never touches the app's state. Handle it before anything
     // else, including the argument parser, which does not know its flags.
     #[cfg(feature = "milkdrop")]
-    if let Some(args) = spotifast::milkdrop::child::Args::parse() {
-        std::process::exit(spotifast::milkdrop::child::run(args));
+    if let Some(args) = resonix::milkdrop::child::Args::parse() {
+        std::process::exit(resonix::milkdrop::child::run(args));
     }
 
     let cli = Cli::from_arg_matches(&Cli::command().get_matches_from(&launch.arguments))
@@ -376,7 +376,7 @@ pub(crate) fn run() -> eframe::Result<()> {
     let cli = if (cli.demo || cli.demo_shot.is_some()) && cli.demo_data.is_none() {
         Cli {
             demo_data: Some(
-                std::env::temp_dir().join(format!("spotifast-demo-{}", std::process::id())),
+                std::env::temp_dir().join(format!("resonix-demo-{}", std::process::id())),
             ),
             ..cli
         }
@@ -393,7 +393,7 @@ pub(crate) fn run() -> eframe::Result<()> {
     let link = cli
         .link
         .as_deref()
-        .map(|text| match spotifast::link::parse(text) {
+        .map(|text| match resonix::link::parse(text) {
             Some(uri) => uri,
             None => {
                 eprintln!("not a Spotify link: {text}");
@@ -431,11 +431,11 @@ pub(crate) fn run() -> eframe::Result<()> {
         None
     };
     let default_filter = if cli.verbose {
-        "info,spotifast=debug"
+        "info,resonix=debug"
     } else {
         // Which system face draws each script the interface font lacks,
         // one line per script at startup, for reports of odd-looking text.
-        "warn,spotifast=info,fastframe_fonts=info"
+        "warn,resonix=info,fastframe_fonts=info"
     };
     #[cfg(feature = "demo")]
     let demo_dirs = cli.demo_data.as_ref().map(|base| paths::AppDirs {
@@ -457,7 +457,7 @@ pub(crate) fn run() -> eframe::Result<()> {
     // Launched from a desktop, stderr goes nowhere; keep the run's log where
     // a bug report can find it, and a line per panic in the panic log (with
     // any link in its message removed: a URL can carry a token).
-    if let Err(error) = fastframe_log::Logging::new("spotifast", env!("CARGO_PKG_VERSION"))
+    if let Err(error) = fastframe_log::Logging::new("resonix", env!("CARGO_PKG_VERSION"))
         .filter(default_filter)
         .file(dirs.log_file())
         .panic_log(dirs.panic_log())
@@ -485,13 +485,13 @@ pub(crate) fn run() -> eframe::Result<()> {
     // version with this launch's link and options; it shows the window,
     // as every restart after an update does, to confirm it started.
     if guarded {
-        let newest_run = spotifast::updates::policy::newest_run(
-            spotifast::updates::VERSION,
+        let newest_run = resonix::updates::policy::newest_run(
+            resonix::updates::VERSION,
             settings.newest_run.as_deref(),
         );
         let relaunch =
             relaunch_arguments(cli.link.as_deref(), cli.device_name.as_deref(), cli.verbose);
-        if spotifast::updates::install_kept(
+        if resonix::updates::install_kept(
             settings.update_automatically,
             Some(&newest_run),
             relaunch,
@@ -508,13 +508,13 @@ pub(crate) fn run() -> eframe::Result<()> {
     // Colour emoji: the fonts are found off this thread. A demo capture
     // draws every picture in the frame that shows it.
     #[cfg(feature = "demo")]
-    spotifast::emoji::install(demo);
+    resonix::emoji::install(demo);
     #[cfg(not(feature = "demo"))]
-    spotifast::emoji::install(false);
+    resonix::emoji::install(false);
     // macOS delivers links as Apple Events; install before the event loop.
     #[cfg(target_os = "macos")]
     if let Some(guard) = &instance {
-        spotifast::mac_links::install(guard.commands(), waker.clone());
+        resonix::mac_links::install(guard.commands(), waker.clone());
     }
 
     // A capture run is a throwaway process next to the real one: no tray
@@ -572,8 +572,8 @@ pub(crate) fn run() -> eframe::Result<()> {
     }
     #[cfg(feature = "demo")]
     if demo {
-        spotifast::demo::populate(&mut app);
-        spotifast::demo::apply_flags(&mut app, cli.demo_page.as_deref(), cli.demo_show.as_deref());
+        resonix::demo::populate(&mut app);
+        resonix::demo::apply_flags(&mut app, cli.demo_page.as_deref(), cli.demo_show.as_deref());
         if let Some(feed) = &cli.demo_update_feed {
             match fastframe_update::Source::local(feed) {
                 Ok(source) => app.update_source = source,
@@ -588,10 +588,10 @@ pub(crate) fn run() -> eframe::Result<()> {
                 app.update_restart_arguments
                     .extend(["--demo-data".into(), base.to_string_lossy().into_owned()]);
             }
-            app.actions.push(spotifast::model::Action::CheckForUpdates);
+            app.actions.push(resonix::model::Action::CheckForUpdates);
         }
         if let Some(locale) = cli.demo_language {
-            app.settings.language = spotifast::settings::LanguageChoice::Locale(locale);
+            app.settings.language = resonix::settings::LanguageChoice::Locale(locale);
             app.locale = locale;
         }
     }
@@ -619,7 +619,7 @@ pub(crate) fn run() -> eframe::Result<()> {
     #[cfg(feature = "demo")]
     let demo_inner = cli.demo_size;
     #[cfg(feature = "demo")]
-    spotifast::window::set_fixed_size(demo_inner.is_some());
+    resonix::window::set_fixed_size(demo_inner.is_some());
     #[cfg(feature = "demo")]
     let demo_storage = app.dirs.cache.join("demo-window.ron");
     // A start at login in the tray. A link asked to be seen, so it opens
@@ -632,7 +632,7 @@ pub(crate) fn run() -> eframe::Result<()> {
     let start_hidden = start_hidden(cli.start_hidden, link_given, false, receipt_shown);
     // From here a polite SIGTERM quits like Quit, stopping Soloist and
     // saving the state, rather than ending the process where it stands.
-    spotifast::terminate::listen(waker.clone());
+    resonix::terminate::listen(waker.clone());
     let shell = fastframe_shell::Shell::new(app, &waker).start_hidden(start_hidden);
     // The menu-bar item answers only while AppKit's loop runs. Elsewhere
     // nothing needs the main thread between headless ticks, so the shell
@@ -695,22 +695,22 @@ pub(crate) fn run() -> eframe::Result<()> {
             // the next repaint.
             #[cfg(target_os = "macos")]
             {
-                spotifast::mac_touchbar_crash_guard::install();
-                spotifast::mac_menu::init();
+                resonix::mac_touchbar_crash_guard::install();
+                resonix::mac_menu::init();
                 let ctx = cc.egui_ctx.clone();
-                spotifast::mac_menu::set_waker(move || ctx.request_repaint());
+                resonix::mac_menu::set_waker(move || ctx.request_repaint());
 
-                spotifast::notch::init();
+                resonix::notch::init();
                 let ctx_notch = cc.egui_ctx.clone();
-                spotifast::notch::set_waker(move || ctx_notch.request_repaint());
+                resonix::notch::set_waker(move || ctx_notch.request_repaint());
             }
             {
                 use raw_window_handle::HasDisplayHandle;
                 if let Ok(display) = cc.display_handle() {
                     app.window_level_supported =
-                        spotifast::window::supports_window_level(display.as_raw());
+                        resonix::window::supports_window_level(display.as_raw());
                     app.taskbar_hiding_supported =
-                        spotifast::window::supports_hiding_from_taskbar(display.as_raw());
+                        resonix::window::supports_hiding_from_taskbar(display.as_raw());
                 }
             }
             // winit hides a taskbar button on Windows only; X11 is
@@ -719,14 +719,14 @@ pub(crate) fn run() -> eframe::Result<()> {
             if hide_from_taskbar {
                 use raw_window_handle::HasWindowHandle;
                 if let Ok(handle) = cc.window_handle() {
-                    spotifast::window::skip_x11_taskbar(handle.as_raw());
+                    resonix::window::skip_x11_taskbar(handle.as_raw());
                 }
             }
             app.attach(&cc.egui_ctx);
             #[cfg(windows)]
             let thumbbar = {
                 use raw_window_handle::{HasWindowHandle, RawWindowHandle};
-                let mut toolbar = spotifast::thumbbar::ThumbBar::new();
+                let mut toolbar = resonix::thumbbar::ThumbBar::new();
                 if thumbbar_enabled
                     && let Ok(handle) = cc.window_handle()
                     && let RawWindowHandle::Win32(window) = handle.as_raw()
@@ -753,8 +753,8 @@ pub(crate) fn run() -> eframe::Result<()> {
             }))
         }));
         fastframe_graphics::Graphics::new("Resonix")
-            .help(spotifast::window::DOWNLOAD_PAGE)
-            .dialog(move |trouble| spotifast::window::no_window_dialog(locale, trouble))
+            .help(resonix::window::DOWNLOAD_PAGE)
+            .dialog(move |trouble| resonix::window::no_window_dialog(locale, trouble))
             .run_native(
                 || options.take().expect("one try opens the window"),
                 || creator.take().expect("one try opens the window"),
@@ -778,7 +778,7 @@ struct MiniWindow {
 impl MiniWindow {
     fn wanted(app: &app::App) -> Option<Self> {
         app.settings.winamp_window.then(|| Self {
-            size: spotifast::ui::winamp::initial_size(&app.settings, &app.winamp.skin),
+            size: resonix::ui::winamp::initial_size(&app.settings, &app.winamp.skin),
             geometry: Geometry {
                 position: app.winamp.geometry.position,
                 ..Geometry::default()
@@ -894,7 +894,7 @@ fn native_options(
     #[cfg(target_os = "linux")]
     let app_id = desktop_entry();
     #[cfg(not(target_os = "linux"))]
-    let app_id = "spotifast";
+    let app_id = "resonix";
     let icon = if cfg!(target_os = "macos") {
         // macOS takes the dock icon from the bundle's .icns, which is the
         // 1024px drawing with the platform's rounding. Setting a window
@@ -949,7 +949,7 @@ fn native_options(
                 // Removing its decorations lets the app surface fill the window.
                 .with_decorations(main_window_decorated(fastframe_titlebar::enabled()))
                 .with_inner_size(size)
-                .with_min_inner_size(inner_size.unwrap_or(spotifast::window::MAIN_MIN_SIZE))
+                .with_min_inner_size(inner_size.unwrap_or(resonix::window::MAIN_MIN_SIZE))
                 .with_fullscreen(fullscreen);
             if inner_size.is_some() {
                 viewport.with_max_inner_size(size)
@@ -1017,7 +1017,7 @@ mod native_window_tests {
 
     #[test]
     fn window_geometry_is_kept_without_touching_demo_storage() {
-        let window_file = std::path::PathBuf::from("spotifast-data/state/app.ron");
+        let window_file = std::path::PathBuf::from("resonix-data/state/app.ron");
         let main = profile_options(
             native_options(false, None, None, Geometry::default()),
             Some(window_file.clone()),
@@ -1059,7 +1059,7 @@ mod native_window_tests {
         }
         #[cfg(not(target_os = "linux"))]
         {
-            assert_eq!(main.viewport.app_id.as_deref(), Some("spotifast"));
+            assert_eq!(main.viewport.app_id.as_deref(), Some("resonix"));
             assert_eq!(mini.viewport.app_id, main.viewport.app_id);
             assert_eq!(main.persistence_path, None);
         }
@@ -1124,7 +1124,7 @@ mod native_window_tests {
                 ..Default::default()
             };
             let size =
-                spotifast::ui::winamp::initial_size(&settings, &spotifast::skin::Skin::builtin());
+                resonix::ui::winamp::initial_size(&settings, &resonix::skin::Skin::builtin());
             let options = native_options(
                 false,
                 Some(MiniWindow {
@@ -1338,7 +1338,7 @@ struct Shell {
     /// Whether this window's first frame checked that a monitor shows it.
     recovery_checked: bool,
     #[cfg(windows)]
-    thumbbar: spotifast::thumbbar::ThumbBar,
+    thumbbar: resonix::thumbbar::ThumbBar,
     /// A pending `--demo-shot` capture, if this is a screenshot run.
     #[cfg(feature = "demo")]
     shot: Option<Shot>,
@@ -1372,7 +1372,7 @@ impl Shell {
             .winit_window()
             .and_then(|window| window.current_monitor())
             .and_then(|monitor| monitor.refresh_rate_millihertz())
-            .and_then(spotifast::milkdrop::screen_hz)
+            .and_then(resonix::milkdrop::screen_hz)
             .unwrap_or(0);
     }
 
@@ -1386,9 +1386,9 @@ impl Shell {
         self.read_screen_hz(ctx, frame);
         let app = &mut *self.app;
         #[cfg(target_os = "macos")]
-        for command in spotifast::mac_menu::drain_commands() {
-            use spotifast::mac_menu::MenuCommand;
-            use spotifast::model::{Action, Dialog, Page};
+        for command in resonix::mac_menu::drain_commands() {
+            use resonix::mac_menu::MenuCommand;
+            use resonix::model::{Action, Dialog, Page};
             let action = match command {
                 MenuCommand::PlayPause => Action::TogglePlay,
                 MenuCommand::Next => Action::Next,
@@ -1411,7 +1411,7 @@ impl Shell {
                 MenuCommand::Back => Action::Back,
                 MenuCommand::Forward => Action::Forward,
                 MenuCommand::OpenRepo => {
-                    ctx.open_url(egui::OpenUrl::new_tab("https://github.com/crmne/spotifast"));
+                    ctx.open_url(egui::OpenUrl::new_tab("https://github.com/ItsARCn/Resonix"));
                     continue;
                 }
                 // Editing goes through egui, which owns the text field
@@ -1489,9 +1489,9 @@ struct DemoDrag {
 #[cfg(feature = "demo")]
 impl DemoDrag {
     /// Frames to rest before pressing, so the rows under `from` are laid
-    /// out. `SPOTIFAST_DEMO_REST` asks for longer, for a skin still loading.
+    /// out. `RESONIX_DEMO_REST` asks for longer, for a skin still loading.
     fn rest() -> u32 {
-        std::env::var("SPOTIFAST_DEMO_REST")
+        std::env::var("RESONIX_DEMO_REST")
             .ok()
             .and_then(|frames| frames.parse().ok())
             .unwrap_or(20)
@@ -1665,7 +1665,7 @@ mod tests {
         // fastframe_update::intercept reads no flag past `--`, and the
         // helper puts its receipt flag after these.
         assert!(!arguments.iter().any(|argument| argument == "--"));
-        let mut relaunched = vec!["spotifast".to_owned()];
+        let mut relaunched = vec!["resonix".to_owned()];
         relaunched.extend(arguments);
         let cli = Cli::try_parse_from(&relaunched).expect("it parses");
         assert_eq!(cli.link.as_deref(), Some(link));
@@ -1678,10 +1678,10 @@ mod tests {
     /// launch has something to show.
     #[test]
     fn a_start_at_login_in_the_tray_waits_unless_there_is_something_to_show() {
-        let launch = Cli::try_parse_from(["spotifast", "--start-hidden"]).expect("it parses");
+        let launch = Cli::try_parse_from(["resonix", "--start-hidden"]).expect("it parses");
         assert!(launch.start_hidden);
         assert!(
-            !Cli::try_parse_from(["spotifast"])
+            !Cli::try_parse_from(["resonix"])
                 .expect("it parses")
                 .start_hidden
         );
@@ -1708,7 +1708,7 @@ mod tests {
     #[test]
     fn a_link_and_a_verb_are_told_apart() {
         // #given / #when / #then
-        let launch = Cli::try_parse_from(["spotifast", "spotify:track:4uLU6hMCjMI75M1A2tKUQC"])
+        let launch = Cli::try_parse_from(["resonix", "spotify:track:4uLU6hMCjMI75M1A2tKUQC"])
             .expect("a link parses");
         assert_eq!(
             launch.link.as_deref(),
@@ -1717,7 +1717,7 @@ mod tests {
         assert!(launch.control.is_none());
 
         let launch = Cli::try_parse_from([
-            "spotifast",
+            "resonix",
             "https://open.spotify.com/album/1DFixLWuPkv3KT3TnV35m3?si=x",
             "--verbose",
         ])
@@ -1725,11 +1725,11 @@ mod tests {
         assert!(launch.link.is_some());
         assert!(launch.verbose);
 
-        let verb = Cli::try_parse_from(["spotifast", "next"]).expect("a verb parses");
+        let verb = Cli::try_parse_from(["resonix", "next"]).expect("a verb parses");
         assert!(matches!(verb.control, Some(Control::Next)));
         assert!(verb.link.is_none());
 
-        let bare = Cli::try_parse_from(["spotifast"]).expect("a plain launch parses");
+        let bare = Cli::try_parse_from(["resonix"]).expect("a plain launch parses");
         assert!(bare.link.is_none() && bare.control.is_none());
     }
 }

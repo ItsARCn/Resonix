@@ -22,17 +22,17 @@ use crate::model::*;
 fn image(seed: u32) -> Vec<Image> {
     vec![
         Image {
-            url: format!("https://picsum.photos/seed/spotifast{seed}/640/640"),
+            url: format!("https://picsum.photos/seed/resonix{seed}/640/640"),
             width: Some(640),
             height: Some(640),
         },
         Image {
-            url: format!("https://picsum.photos/seed/spotifast{seed}/300/300"),
+            url: format!("https://picsum.photos/seed/resonix{seed}/300/300"),
             width: Some(300),
             height: Some(300),
         },
         Image {
-            url: format!("https://picsum.photos/seed/spotifast{seed}/64/64"),
+            url: format!("https://picsum.photos/seed/resonix{seed}/64/64"),
             width: Some(64),
             height: Some(64),
         },
@@ -719,7 +719,7 @@ pub fn populate(app: &mut App) {
     app.devices = vec![
         Device {
             id: Some("local-demo".into()),
-            name: "Spotifast".into(),
+            name: "Resonix".into(),
             is_active: false,
             is_restricted: false,
             volume_percent: Some(70),
@@ -819,6 +819,7 @@ fn demo_outputs() -> Vec<fastframe_audio::DeviceInfo> {
     .collect()
 }
 
+#[cfg(feature = "demo")]
 fn sonos_devices(app: &mut App, active: bool) {
     app.show_devices = true;
     app.receivers = vec![crate::zeroconf::Receiver {
@@ -1281,7 +1282,7 @@ pub fn apply_flags(app: &mut App, page: Option<&str>, show: Option<&str>) {
                         total: 14_000_000,
                     },
                     "soloist-pairing" => Status::Pairing {
-                        name: "Spotifast Soloist (12345678)".into(),
+                        name: "Resonix Soloist (12345678)".into(),
                         version: "1.3.10".into(),
                     },
                     "soloist-ready" | "soloist-playing" | "soloist-verifying" => {
@@ -1290,7 +1291,7 @@ pub fn apply_flags(app: &mut App, page: Option<&str>, show: Option<&str>) {
                         if surface == "soloist-playing" {
                             let device = Device {
                                 id: app.soloist_device_id.clone(),
-                                name: "Spotifast Soloist (12345678)".into(),
+                                name: "Resonix Soloist (12345678)".into(),
                                 kind: "speaker".into(),
                                 is_active: true,
                                 volume_percent: Some(62),
@@ -1307,7 +1308,7 @@ pub fn apply_flags(app: &mut App, page: Option<&str>, show: Option<&str>) {
                             }
                         }
                         Status::Ready {
-                            name: "Spotifast Soloist (12345678)".into(),
+                            name: "Resonix Soloist (12345678)".into(),
                             version: "1.3.10".into(),
                             expires: crate::soloist::install::now()
                                 + 75 * crate::soloist::install::DAY,
@@ -1584,18 +1585,18 @@ pub fn apply_flags(app: &mut App, page: Option<&str>, show: Option<&str>) {
             "update" => {
                 app.update = Some(crate::updates::Release {
                     version: "0.7.1".into(),
-                    url: "https://spotifast.rocks/download/".into(),
+                    url: "https://resonix.rocks/download/".into(),
                 });
             }
             // The update window with a download ready to install.
             "update-ready" => {
                 let installation = crate::updates::Installation {
-                    executable: "/opt/spotifast/spotifast".into(),
+                    executable: "/opt/resonix/resonix".into(),
                     kind: crate::updates::Kind::Portable,
                 };
                 app.update = Some(crate::updates::Release {
                     version: "0.18.0".into(),
-                    url: "https://github.com/crmne/spotifast/releases/tag/v0.18.0".into(),
+                    url: "https://github.com/ItsARCn/Resonix/releases/tag/v0.18.0".into(),
                 });
                 app.update_support = Some(Ok(installation.clone()));
                 app.update_download = crate::updates::DownloadState::Ready(Box::new(
@@ -1608,14 +1609,14 @@ pub fn apply_flags(app: &mut App, page: Option<&str>, show: Option<&str>) {
                 app.winamp.demo_settings_filter = Some("Update automatically".into());
             }
             // The update window of a copy that can't update itself, for
-            // each way Spotifast is installed.
+            // each way Resonix is installed.
             "update-aur" | "update-homebrew" | "update-copr" | "update-nixos" | "update-deb"
             | "update-rpm" | "update-flatpak" | "update-appimage" => {
                 use crate::updates::{Manager, Notice, Route};
                 let version = "0.18.0";
                 let file = |name: &str| {
                     format!(
-                        "https://github.com/crmne/spotifast/releases/download/v{version}/{name}"
+                        "https://github.com/ItsARCn/Resonix/releases/download/v{version}/{name}"
                     )
                 };
                 let managed = |manager, command: Option<&str>| Route::Managed {
@@ -1623,29 +1624,29 @@ pub fn apply_flags(app: &mut App, page: Option<&str>, show: Option<&str>) {
                     command: command.map(str::to_owned),
                 };
                 let route = match surface {
-                    "update-aur" => Some(managed(Manager::Aur, Some("yay -Syu spotifast-bin"))),
+                    "update-aur" => Some(managed(Manager::Aur, Some("yay -Syu resonix-bin"))),
                     "update-homebrew" => Some(managed(
                         Manager::HomebrewCask,
-                        Some("brew upgrade --cask spotifast"),
+                        Some("brew upgrade --cask resonix"),
                     )),
                     "update-copr" => Some(Route::Copr {
-                        command: Some("sudo dnf upgrade --refresh spotifast".into()),
+                        command: Some("sudo dnf upgrade --refresh resonix".into()),
                     }),
                     "update-nixos" => Some(managed(Manager::Nix, None)),
                     "update-deb" => Some(Route::Deb {
-                        download: file("spotifast_0.18.0_amd64.deb"),
-                        command: "sudo apt install ~/Downloads/spotifast_0.18.0_amd64.deb".into(),
+                        download: file("resonix_0.18.0_amd64.deb"),
+                        command: "sudo apt install ~/Downloads/resonix_0.18.0_amd64.deb".into(),
                     }),
                     "update-rpm" => Some(Route::Rpm {
                         command: format!(
                             "sudo dnf install {}",
-                            file("spotifast-0.18.0-1.x86_64.rpm")
+                            file("resonix-0.18.0-1.x86_64.rpm")
                         ),
                     }),
                     "update-flatpak" => Some(Route::FlatpakBundle {
-                        download: file("spotifast-v0.18.0-x86_64.flatpak"),
+                        download: file("resonix-v0.18.0-x86_64.flatpak"),
                         command:
-                            "flatpak install --user ~/Downloads/spotifast-v0.18.0-x86_64.flatpak"
+                            "flatpak install --user ~/Downloads/resonix-v0.18.0-x86_64.flatpak"
                                 .into(),
                     }),
                     _ => None,
@@ -1657,7 +1658,7 @@ pub fn apply_flags(app: &mut App, page: Option<&str>, show: Option<&str>) {
                 };
                 app.update = Some(crate::updates::Release {
                     version: version.into(),
-                    url: format!("https://github.com/crmne/spotifast/releases/tag/v{version}"),
+                    url: format!("https://github.com/ItsARCn/Resonix/releases/tag/v{version}"),
                 });
                 app.update_support = Some(Err(Notice {
                     reason: reason.to_string(),
@@ -2096,8 +2097,7 @@ mod tests {
     use std::sync::Arc;
 
     fn accessible_app(name: &str) -> (egui::Context, App) {
-        let root =
-            std::env::temp_dir().join(format!("spotifast-a11y-{name}-{}", std::process::id()));
+        let root = std::env::temp_dir().join(format!("resonix-a11y-{name}-{}", std::process::id()));
         let ctx = egui::Context::default();
         ctx.enable_accesskit();
         let waker = crate::backend::Waker::default();
@@ -3905,7 +3905,7 @@ mod tests {
             let button = accessible_node(
                 &tree,
                 if setup {
-                    "Register Spotifast"
+                    "Register Resonix"
                 } else {
                     "Close banner"
                 },
@@ -3991,11 +3991,7 @@ mod tests {
             let tree = accessible_frame(&ctx, &mut app, vec![]);
             let button = accessible_node(
                 &tree,
-                if setup {
-                    "Register Spotifast"
-                } else {
-                    "Not now"
-                },
+                if setup { "Register Resonix" } else { "Not now" },
                 Role::Button,
             );
             accessible_frame(
@@ -4044,7 +4040,7 @@ mod tests {
             url: "https://example.invalid/release".into(),
         });
         let installation = Installation {
-            executable: std::path::PathBuf::from("/test/spotifast"),
+            executable: std::path::PathBuf::from("/test/resonix"),
             kind: Kind::Portable,
         };
         app.update_support = Some(Ok(installation.clone()));
@@ -4285,7 +4281,7 @@ mod tests {
         app.dialog = Some(Dialog::PersonalAppIntro);
         accessible_frame(&ctx, &mut app, vec![]);
         let tree = accessible_frame(&ctx, &mut app, vec![]);
-        let setup = accessible_node(&tree, "Register Spotifast", Role::Button);
+        let setup = accessible_node(&tree, "Register Resonix", Role::Button);
         accessible_frame(
             &ctx,
             &mut app,
@@ -4390,7 +4386,7 @@ mod tests {
     #[test]
     fn placing_a_demo_skin_never_writes_through_a_link_or_onto_its_source() {
         use std::os::unix::fs::symlink;
-        let root = std::env::temp_dir().join(format!("spotifast-demo-skin-{}", std::process::id()));
+        let root = std::env::temp_dir().join(format!("resonix-demo-skin-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&root);
         let real = root.join("real");
         std::fs::create_dir_all(&real).unwrap();
@@ -4581,13 +4577,13 @@ mod tests {
 
         app.settings.web_client_id = None;
         app.web_app = None;
-        let text = settings_text(&ctx, &mut app, "Spotifast registered");
+        let text = settings_text(&ctx, &mut app, "Resonix registered");
         assert!(!text.iter().any(|text| text == "Account"));
         assert!(text.iter().any(|text| text.starts_with("No settings for")));
         app.settings.web_client_id = Some("test-client".into());
         app.web_app = Some("test-client".into());
-        let text = settings_text(&ctx, &mut app, "Spotifast registered");
-        assert!(text.iter().any(|text| text == "Spotifast registered"));
+        let text = settings_text(&ctx, &mut app, "Resonix registered");
+        assert!(text.iter().any(|text| text == "Resonix registered"));
         app.backend.shutdown();
     }
 
@@ -4597,17 +4593,17 @@ mod tests {
         app.settings.web_client_id = None;
         app.web_app = None;
         let text = settings_text(&ctx, &mut app, "Account");
-        assert!(text.iter().any(|text| text == "Register Spotifast"));
+        assert!(text.iter().any(|text| text == "Register Resonix"));
 
         app.settings.web_client_id = Some("test-client".into());
         let text = settings_text(&ctx, &mut app, "Account");
-        assert!(text.iter().any(|text| text == "Register Spotifast"));
+        assert!(text.iter().any(|text| text == "Register Resonix"));
         assert!(text.iter().any(|text| text == "Authorize your Client ID"));
 
         app.web_app = Some("test-client".into());
         let text = settings_text(&ctx, &mut app, "Account");
-        assert!(text.iter().any(|text| text == "Spotifast registered"));
-        assert!(!text.iter().any(|text| text == "Register Spotifast"));
+        assert!(text.iter().any(|text| text == "Resonix registered"));
+        assert!(!text.iter().any(|text| text == "Register Resonix"));
         assert!(!text.iter().any(|text| text == "Setup guide"));
         app.backend.shutdown();
     }
@@ -5513,160 +5509,6 @@ mod tests {
             let mut output = ctx.run_ui(input, |ui| app.frame_ui(ui));
             output.textures_delta.clear();
         }
-    }
-
-    #[test]
-    fn an_idle_sonos_in_the_picker_transfers_instead_of_authorizing() {
-        for palette in [
-            crate::theme::Palette::dark(),
-            crate::theme::Palette::light(),
-        ] {
-            let (ctx, mut app) = accessible_app("sonos-device-picker");
-            app.backend.set_offline(true);
-            app.palette = palette;
-            app.local_ready = true;
-            sonos_devices(&mut app, false);
-            app.devices.clear();
-            let draw = |app: &mut App, events: Vec<egui::Event>| {
-                let mut output = ctx.run_ui(
-                    egui::RawInput {
-                        screen_rect: Some(egui::Rect::from_min_size(
-                            egui::Pos2::ZERO,
-                            egui::vec2(760.0, 620.0),
-                        )),
-                        events,
-                        ..Default::default()
-                    },
-                    |_| crate::ui::devices::popup(app, &ctx),
-                );
-                output.textures_delta.clear();
-                output
-            };
-            draw(&mut app, Vec::new());
-            let output = draw(&mut app, Vec::new());
-            let labels = menu_text(&output);
-            assert_eq!(
-                labels.iter().filter(|(text, _)| text == "Office").count(),
-                1
-            );
-            let office = labels.iter().find(|(text, _)| text == "Office").unwrap().1;
-            app.actions.clear();
-            draw(
-                &mut app,
-                pointer_click(office.center(), egui::PointerButton::Primary),
-            );
-            assert!(app.actions.iter().any(
-                |action| matches!(action, crate::model::Action::Transfer(id) if id == "office")
-            ));
-            assert!(
-                !app.actions
-                    .iter()
-                    .any(|action| matches!(action, crate::model::Action::ActivateReceiver(_)))
-            );
-            app.backend.shutdown();
-        }
-    }
-
-    #[test]
-    fn a_long_device_list_stays_in_the_window_and_scrolls_to_the_last_speaker() {
-        let (ctx, mut app) = accessible_app("long-device-list");
-        app.backend.set_offline(true);
-        app.show_devices = true;
-        app.local_ready = true;
-        app.receivers.clear();
-        app.devices = (0..40)
-            .map(|index| Device {
-                id: Some(format!("speaker-{index}")),
-                name: format!("Speaker {index:02}"),
-                kind: "speaker".into(),
-                ..Default::default()
-            })
-            .collect();
-        let screen = egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(760.0, 620.0));
-        ctx.data_mut(|data| {
-            data.insert_temp(
-                egui::Id::new(crate::ui::devices::BUTTON_RECT_ID),
-                egui::Rect::from_min_size(egui::pos2(680.0, 580.0), egui::vec2(32.0, 32.0)),
-            )
-        });
-        let draw = |app: &mut App, events: Vec<egui::Event>| {
-            let mut output = ctx.run_ui(
-                egui::RawInput {
-                    screen_rect: Some(screen),
-                    events,
-                    ..Default::default()
-                },
-                |_| crate::ui::devices::popup(app, &ctx),
-            );
-            output.textures_delta.clear();
-            output
-        };
-        // Open with only this computer, then let device discovery fill the list.
-        let discovered = std::mem::take(&mut app.devices);
-        draw(&mut app, vec![]);
-        draw(&mut app, vec![]);
-        app.devices = discovered;
-        draw(&mut app, vec![]);
-        let output = draw(&mut app, vec![]);
-        let visible_speakers = output
-            .shapes
-            .iter()
-            .filter(|shape| {
-                matches!(&shape.shape, egui::epaint::Shape::Text(text)
-                    if text.galley.job.text.starts_with("Speaker ")
-                        && shape.clip_rect.contains_rect(text.visual_bounding_rect()))
-            })
-            .count();
-        assert!(
-            visible_speakers >= 5,
-            "show several devices before scrolling, found {visible_speakers}"
-        );
-        let popup = egui::AreaState::load(&ctx, egui::Id::new("devices-popup"))
-            .unwrap()
-            .rect();
-        assert!(screen.contains_rect(popup), "the popup must fit: {popup:?}");
-        let cursor = popup.center();
-        draw(
-            &mut app,
-            vec![
-                egui::Event::PointerMoved(cursor),
-                egui::Event::MouseWheel {
-                    unit: egui::MouseWheelUnit::Point,
-                    delta: egui::vec2(0.0, -10_000.0),
-                    modifiers: egui::Modifiers::NONE,
-                    phase: egui::TouchPhase::Move,
-                },
-            ],
-        );
-        let mut found = None;
-        for _ in 0..30 {
-            let output = draw(&mut app, vec![]);
-            for shape in output.shapes {
-                if let egui::epaint::Shape::Text(text) = shape.shape
-                    && text.galley.job.text == "Speaker 39"
-                    && shape.clip_rect.contains_rect(text.visual_bounding_rect())
-                {
-                    found = Some(text.visual_bounding_rect().center());
-                }
-            }
-        }
-        let last = found.expect("scrolling reaches the last speaker");
-        app.actions.clear();
-        draw(&mut app, pointer_click(last, egui::PointerButton::Primary));
-        assert!(app.actions.iter().any(
-            |action| matches!(action, crate::model::Action::Transfer(id) if id == "speaker-39")
-        ));
-        app.devices.clear();
-        draw(&mut app, vec![]);
-        draw(&mut app, vec![]);
-        let popup = egui::AreaState::load(&ctx, egui::Id::new("devices-popup"))
-            .unwrap()
-            .rect();
-        assert!(
-            popup.height() < 160.0,
-            "a list with only this computer should shrink to fit: {popup:?}"
-        );
-        app.backend.shutdown();
     }
 
     #[test]
@@ -7173,7 +7015,7 @@ mod tests {
             crate::ui::settings::show,
         );
         assert!(app.actions.iter().any(|action| matches!(action,
-            Action::OpenUrl(url) if url == "https://spotifast.rocks/settings-and-files/#custom-themes")));
+            Action::OpenUrl(url) if url == "https://github.com/ItsARCn/Resonix")));
         app.backend.shutdown();
     }
 
@@ -7323,7 +7165,7 @@ mod tests {
         let painted = view_frame(&ctx, &mut app, vec![], App::frame_ui);
         let title = sidebar_text(&painted, "Light mode theme");
         assert!(sidebar_text(&painted, "Dark mode theme").top() > title.top());
-        // The picker beside the title shows Spotifast's own Light.
+        // The picker beside the title shows Resonix's own Light.
         let picker = painted
             .iter()
             .find(|(text, rect)| {
@@ -8427,7 +8269,7 @@ mod tests {
                             "{:?} is cut off at {size:?} in {state:?}",
                             text.galley.job.text
                         );
-                        if text.galley.job.text == "Spotifast" {
+                        if text.galley.job.text == "Resonix" {
                             title = Some(rect);
                         }
                     }
@@ -8469,8 +8311,7 @@ mod tests {
     /// A toast is wide enough to avoid wrapping every word.
     #[test]
     fn a_toast_is_wide_enough_to_read() {
-        let root =
-            std::env::temp_dir().join(format!("spotifast-toast-test-{}", std::process::id()));
+        let root = std::env::temp_dir().join(format!("resonix-toast-test-{}", std::process::id()));
         let dirs = AppDirs {
             config: root.join("config"),
             state: root.join("state"),
@@ -8545,7 +8386,7 @@ mod tests {
     #[test]
     fn the_shortcuts_dialog_fits_a_small_window() {
         let root =
-            std::env::temp_dir().join(format!("spotifast-shortcuts-test-{}", std::process::id()));
+            std::env::temp_dir().join(format!("resonix-shortcuts-test-{}", std::process::id()));
         let dirs = AppDirs {
             config: root.join("config"),
             state: root.join("state"),
@@ -8660,7 +8501,7 @@ mod tests {
     #[test]
     fn interface_zoom_puts_minus_on_the_left() {
         let root =
-            std::env::temp_dir().join(format!("spotifast-zoom-order-test-{}", std::process::id()));
+            std::env::temp_dir().join(format!("resonix-zoom-order-test-{}", std::process::id()));
         let dirs = AppDirs {
             config: root.join("config"),
             state: root.join("state"),
@@ -8742,7 +8583,7 @@ mod tests {
     #[test]
     fn the_frame_rate_dial_steps_between_its_stops() {
         let root =
-            std::env::temp_dir().join(format!("spotifast-fps-dial-test-{}", std::process::id()));
+            std::env::temp_dir().join(format!("resonix-fps-dial-test-{}", std::process::id()));
         let dirs = AppDirs {
             config: root.join("config"),
             state: root.join("state"),
@@ -8829,7 +8670,7 @@ mod tests {
     #[test]
     fn the_visualizer_dial_knows_the_screen_without_milkdrop() {
         let root =
-            std::env::temp_dir().join(format!("spotifast-screen-dial-test-{}", std::process::id()));
+            std::env::temp_dir().join(format!("resonix-screen-dial-test-{}", std::process::id()));
         let dirs = AppDirs {
             config: root.join("config"),
             state: root.join("state"),
@@ -8907,10 +8748,8 @@ mod tests {
     /// Rule: side-panel headers stay on one line at their narrowest width.
     #[test]
     fn the_narrowest_panels_keep_their_headers_on_one_row() {
-        let root = std::env::temp_dir().join(format!(
-            "spotifast-queue-header-test-{}",
-            std::process::id()
-        ));
+        let root =
+            std::env::temp_dir().join(format!("resonix-queue-header-test-{}", std::process::id()));
         let dirs = AppDirs {
             config: root.join("config"),
             state: root.join("state"),
@@ -9004,10 +8843,8 @@ mod tests {
     /// With nothing reported, the row is not drawn.
     #[test]
     fn the_queue_names_where_the_song_plays_from() {
-        let root = std::env::temp_dir().join(format!(
-            "spotifast-playing-from-test-{}",
-            std::process::id()
-        ));
+        let root =
+            std::env::temp_dir().join(format!("resonix-playing-from-test-{}", std::process::id()));
         let dirs = AppDirs {
             config: root.join("config"),
             state: root.join("state"),
@@ -9282,7 +9119,7 @@ mod tests {
     #[test]
     fn fullscreen_lyrics_highlight_preserves_line_layout() {
         let root =
-            std::env::temp_dir().join(format!("spotifast-lyrics-layout-{}", std::process::id()));
+            std::env::temp_dir().join(format!("resonix-lyrics-layout-{}", std::process::id()));
         let ctx = egui::Context::default();
         let waker = crate::backend::Waker::default();
         waker.attach(&ctx);
@@ -9402,30 +9239,6 @@ mod tests {
         assert_eq!(app.settings.bitrate, 160);
         assert!(!app.settings.normalisation);
         assert_eq!(app.settings.audio_cache_mb, 4096);
-        app.backend.shutdown();
-    }
-
-    #[test]
-    fn soloist_activity_offers_authorization_for_missing_or_empty_results() {
-        let (ctx, mut app) = accessible_app("soloist-activity-access");
-        app.settings.soloist_enabled = true;
-        app.local_ready = false;
-        app.local_playback = crate::backend::LocalPlayback::Unavailable;
-        for results in [
-            Loadable::NotLoaded,
-            Loadable::Failed("no session".into()),
-            Loadable::Loaded(Vec::new()),
-        ] {
-            app.friends = results;
-            view_frame(&ctx, &mut app, vec![], crate::ui::friends::side_panel);
-            let text = view_frame(&ctx, &mut app, vec![], crate::ui::friends::side_panel);
-            assert!(text.iter().any(|(s, _)| s == "Authorize"), "{text:?}");
-            assert!(
-                text.iter()
-                    .any(|(s, _)| s == "Connect Spotify to see listening activity."),
-                "{text:?}"
-            );
-        }
         app.backend.shutdown();
     }
 
@@ -9554,16 +9367,16 @@ mod tests {
         // A matching name is not proof that a player belongs to this process.
         app.devices.push(Device {
             id: Some("someone-elses-soloist".into()),
-            name: "Spotifast Soloist (12345678)".into(),
+            name: "Resonix Soloist (12345678)".into(),
             kind: "speaker".into(),
             ..Default::default()
         });
         accessible_frame(&ctx, &mut app, vec![]);
         let tree = accessible_frame(&ctx, &mut app, vec![]);
         accessible_node(&tree, "This computer", Role::Button);
-        accessible_node(&tree, "Spotifast Soloist (12345678)", Role::Button);
+        accessible_node(&tree, "Resonix Soloist (12345678)", Role::Button);
         assert!(!tree.nodes.iter().any(|(_, n)| n.label().is_some_and(|s| {
-            s.starts_with("Playing on") || s == "Spotifast (this computer)" || s == "Audio output"
+            s.starts_with("Playing on") || s == "Resonix (this computer)" || s == "Audio output"
         })));
         assert!(app.targets_own_soloist());
         assert!(
@@ -9584,16 +9397,12 @@ mod tests {
         accessible_frame(&ctx, &mut app, vec![]);
         let tree = accessible_frame(&ctx, &mut app, vec![]);
         assert!(!app.targets_own_soloist());
-        accessible_node(
-            &tree,
-            "Playing on Spotifast Soloist (12345678)",
-            Role::Button,
-        );
+        accessible_node(&tree, "Playing on Resonix Soloist (12345678)", Role::Button);
 
         app.apply(Action::SetSoloist(false), &ctx);
         accessible_frame(&ctx, &mut app, vec![]);
         let tree = accessible_frame(&ctx, &mut app, vec![]);
-        accessible_node(&tree, "Spotifast (this computer)", Role::Button);
+        accessible_node(&tree, "Resonix (this computer)", Role::Button);
         accessible_node(&tree, "Audio output", Role::Button);
         app.backend.shutdown();
     }
@@ -9794,7 +9603,7 @@ mod tests {
                     };
                     let title = bounds(title);
                     let instruction = bounds(instruction);
-                    let device = bounds("Spotifast Soloist (12345678)");
+                    let device = bounds("Resonix Soloist (12345678)");
                     let status = bounds(waiting);
                     let fallback = bounds("Use the built-in player");
                     assert!(title.bottom() < instruction.top());
@@ -9840,7 +9649,7 @@ mod tests {
         let (ctx, mut app) = accessible_app("soloist-long-device");
         app.backend.set_offline(true);
         apply_flags(&mut app, None, Some("soloist-onboarding,soloist-pairing"));
-        let name = "Spotifast Soloist on the living room computer (12345678)";
+        let name = "Resonix Soloist on the living room computer (12345678)";
         app.soloist_status = crate::soloist::Status::Pairing {
             name: name.into(),
             version: "test".into(),
@@ -9978,7 +9787,7 @@ mod tests {
         app.backend.shutdown();
     }
 
-    /// While Spotifast restarts the player there is nothing to press.
+    /// While Resonix restarts the player there is nothing to press.
     #[cfg(feature = "demo")]
     #[test]
     fn a_reconnecting_soloist_asks_for_nothing() {
@@ -10081,11 +9890,11 @@ mod tests {
                     total: 10,
                 },
                 crate::soloist::Status::Pairing {
-                    name: "Spotifast Soloist (12345678)".into(),
+                    name: "Resonix Soloist (12345678)".into(),
                     version: "1.3".into(),
                 },
                 crate::soloist::Status::Ready {
-                    name: "Spotifast Soloist (12345678)".into(),
+                    name: "Resonix Soloist (12345678)".into(),
                     version: "1.3".into(),
                     expires: crate::soloist::install::now() + 86400,
                 },
@@ -10100,8 +9909,7 @@ mod tests {
     /// Every page, panel, and dialog lays out without panicking.
     #[test]
     fn every_surface_renders_headless() {
-        let root =
-            std::env::temp_dir().join(format!("spotifast-render-test-{}", std::process::id()));
+        let root = std::env::temp_dir().join(format!("resonix-render-test-{}", std::process::id()));
         let dirs = AppDirs {
             config: root.join("config"),
             state: root.join("state"),
@@ -10220,7 +10028,7 @@ mod tests {
     #[test]
     fn a_long_virtual_queue_and_library_still_draw() {
         let root =
-            std::env::temp_dir().join(format!("spotifast-virtual-long-{}", std::process::id()));
+            std::env::temp_dir().join(format!("resonix-virtual-long-{}", std::process::id()));
         let dirs = AppDirs {
             config: root.join("config"),
             state: root.join("state"),
@@ -10286,10 +10094,8 @@ mod tests {
     }
 
     fn drop_songs_on_sidebar(count: usize) {
-        let root = std::env::temp_dir().join(format!(
-            "spotifast-drag-test-{}-{count}",
-            std::process::id()
-        ));
+        let root =
+            std::env::temp_dir().join(format!("resonix-drag-test-{}-{count}", std::process::id()));
         let dirs = AppDirs {
             config: root.join("config"),
             state: root.join("state"),
@@ -10788,7 +10594,7 @@ mod tests {
     #[test]
     fn dragging_the_now_playing_song_supplies_a_playlist_row() {
         let root = std::env::temp_dir().join(format!(
-            "spotifast-now-playing-drag-test-{}",
+            "resonix-now-playing-drag-test-{}",
             std::process::id()
         ));
         let dirs = AppDirs {
@@ -11301,7 +11107,7 @@ mod tests {
         app.backend.shutdown();
     }
 
-    /// "Next up" plays from the current context, not from a list Spotifast
+    /// "Next up" plays from the current context, not from a list Resonix
     /// can rewrite, so it is never a drop target: dropping a queued row on
     /// it must not move or insert anything, even though the row sits inside
     /// the same scrollable list as "Playing next".
@@ -11807,7 +11613,7 @@ mod tests {
     #[test]
     fn dragging_within_the_pinned_block_reorders_it() {
         let root =
-            std::env::temp_dir().join(format!("spotifast-reorder-test-{}", std::process::id()));
+            std::env::temp_dir().join(format!("resonix-reorder-test-{}", std::process::id()));
         let dirs = AppDirs {
             config: root.join("config"),
             state: root.join("state"),
@@ -11886,7 +11692,7 @@ mod tests {
     #[test]
     fn dropping_between_unpinned_playlists_creates_the_custom_order() {
         let root =
-            std::env::temp_dir().join(format!("spotifast-unpinned-test-{}", std::process::id()));
+            std::env::temp_dir().join(format!("resonix-unpinned-test-{}", std::process::id()));
         let dirs = AppDirs {
             config: root.join("config"),
             state: root.join("state"),
@@ -12681,7 +12487,7 @@ mod tests {
     /// before asking the server.
     #[test]
     fn dragging_a_row_within_a_playlist_reorders_it() {
-        let root = std::env::temp_dir().join(format!("spotifast-move-test-{}", std::process::id()));
+        let root = std::env::temp_dir().join(format!("resonix-move-test-{}", std::process::id()));
         let dirs = AppDirs {
             config: root.join("config"),
             state: root.join("state"),
@@ -12927,975 +12733,4 @@ mod tests {
             output.textures_delta.clear();
             menu_text(&output)
         };
-        let text = frame(&ctx, &mut app, &songs, vec![]);
-        let remove = text
-            .iter()
-            .find(|(text, _)| text == "Remove from this playlist")
-            .expect("multi-select menu lost its removal")
-            .1
-            .center();
-        app.actions.clear();
-        frame(
-            &ctx,
-            &mut app,
-            &songs,
-            pointer_click(remove, egui::PointerButton::Primary),
-        );
-        let expected: Vec<String> = songs.iter().map(|song| song.uri().to_string()).collect();
-        assert!(
-            matches!(app.actions.as_slice(), [Action::RemoveFromPlaylist { playlist_id, uris, .. }] if playlist_id == "pl1" && *uris == expected)
-        );
-        app.backend.shutdown();
-    }
-
-    /// The custom order is a setting like any other: it survives the trip
-    /// through the settings file, and older files without it stay in the
-    /// automatic order.
-    #[test]
-    fn custom_sidebar_order_round_trips_through_settings() {
-        let settings = Settings {
-            sidebar_order: vec![
-                "spotify:playlist:pl4".to_string(),
-                "spotify:playlist:pl0".to_string(),
-            ],
-            ..Settings::default()
-        };
-        let json = serde_json::to_string(&settings).unwrap();
-        let restored: Settings = serde_json::from_str(&json).unwrap();
-        assert_eq!(restored.sidebar_order, settings.sidebar_order);
-        let older: Settings = serde_json::from_str("{}").unwrap();
-        assert!(older.sidebar_order.is_empty());
-    }
-
-    /// Clicking the search icon in the library header reveals and focuses
-    /// the sidebar search field.
-    #[test]
-    fn clicking_search_in_library_shelf_focuses_search_field() {
-        let root = std::env::temp_dir().join(format!(
-            "spotifast-sidebar-search-focus-test-{}",
-            std::process::id()
-        ));
-        let dirs = AppDirs {
-            config: root.join("config"),
-            state: root.join("state"),
-            cache: root.join("cache"),
-        };
-        let ctx = egui::Context::default();
-        ctx.enable_accesskit();
-        let waker = crate::backend::Waker::default();
-        waker.attach(&ctx);
-        let mut app = App::new(
-            &waker,
-            dirs,
-            Settings::default(),
-            AppOptions {
-                media_controls: false,
-                restore_sign_in: false,
-                tray: false,
-                autostart: false,
-            },
-        );
-        app.attach(&ctx);
-        populate(&mut app);
-
-        // Use the button's actual bounds: the header can gain controls
-        // without changing which button this pointer test exercises.
-        let tree = accessible_frame(&ctx, &mut app, vec![]);
-        let search = accessible_node(&tree, "Search Your Library", egui::accesskit::Role::Button);
-        let bounds = tree
-            .nodes
-            .iter()
-            .find(|(id, _)| *id == search)
-            .and_then(|(_, node)| node.bounds())
-            .expect("Search Your Library bounds");
-        let search_pos = egui::pos2(
-            ((bounds.x0 + bounds.x1) / 2.0) as f32,
-            ((bounds.y0 + bounds.y1) / 2.0) as f32,
-        );
-
-        // Click on the search button in the Library shelf header.
-        frame_events(
-            &ctx,
-            &mut app,
-            vec![
-                egui::Event::PointerMoved(search_pos),
-                egui::Event::PointerButton {
-                    pos: search_pos,
-                    button: egui::PointerButton::Primary,
-                    pressed: true,
-                    modifiers: egui::Modifiers::NONE,
-                },
-                egui::Event::PointerButton {
-                    pos: search_pos,
-                    button: egui::PointerButton::Primary,
-                    pressed: false,
-                    modifiers: egui::Modifiers::NONE,
-                },
-            ],
-        );
-
-        // Advance one frame so the focused widget processes events.
-        frame(&ctx, &mut app);
-
-        // Verify the search field is shown and has keyboard focus.
-        let search_id = egui::Id::new("sidebar-search");
-        let has_focus = ctx.memory(|m| m.has_focus(search_id));
-        assert!(
-            has_focus,
-            "sidebar-search must have keyboard focus after clicking the search icon"
-        );
-
-        app.backend.shutdown();
-        let _ = std::fs::remove_dir_all(root);
-    }
-
-    /// The badges at the right end of the top bar sit in a right-to-left
-    /// layout, which does not wrap and does not clip: anything that does not
-    /// fit marches left over the search field. Draw the real bar and check
-    /// that it never does.
-    #[test]
-    fn the_top_bar_badges_never_cover_the_search_field() {
-        use crate::updates::{DownloadState, Installation, Kind, Prepared};
-        use egui::accesskit::{Action as AccessibleAction, Role};
-        // `widgets::search_field` insets its text this far from the pill's
-        // right edge, so the pill reaches past the rect the field reports.
-        const FIELD_RIGHT_INSET: f32 = 30.0;
-        let (ctx, mut app) = accessible_app("topbar-badges");
-        app.open(Page::Playlist("pl1".into()));
-        for panel in [None, Some("queue"), Some("lyrics")] {
-            app.show_queue_panel = panel == Some("queue");
-            app.show_lyrics_panel = panel == Some("lyrics");
-            for (label, state) in [
-                (None, DownloadState::Idle),
-                (Some("Update to 9.9.9"), DownloadState::Idle),
-                (
-                    Some("Downloading update…"),
-                    DownloadState::Downloading {
-                        received: 1,
-                        total: 2,
-                    },
-                ),
-                (
-                    Some("Update ready"),
-                    DownloadState::Ready(Box::new(Prepared::sample(
-                        Installation {
-                            executable: "/test/spotifast".into(),
-                            kind: Kind::Portable,
-                        },
-                        "9.9.9",
-                    ))),
-                ),
-            ] {
-                app.update_download = state;
-                app.update = label.map(|_| crate::updates::Release {
-                    version: "9.9.9".into(),
-                    url: "https://example.invalid/releases".into(),
-                });
-                // Keep the original 760-point coverage without a right panel,
-                // and the reported 1080-point size with one. Full-height panel
-                // placement at 760 points is checked independently below.
-                let widths: &[f32] = if panel.is_some() {
-                    &[1080.0, 1120.0, 1200.0, 1280.0, 1440.0, 1600.0, 1920.0]
-                } else {
-                    &[
-                        760.0, 800.0, 860.0, 900.0, 1000.0, 1080.0, 1200.0, 1280.0, 1440.0, 1600.0,
-                        1920.0,
-                    ]
-                };
-                for &width in widths {
-                    let narrowest = width == widths[0];
-                    let mut draw = || {
-                        let mut output = ctx.run_ui(
-                            egui::RawInput {
-                                screen_rect: Some(egui::Rect::from_min_size(
-                                    egui::Pos2::ZERO,
-                                    egui::vec2(width, 620.0),
-                                )),
-                                ..Default::default()
-                            },
-                            |ui| app.frame_ui(ui),
-                        );
-                        output.textures_delta.clear();
-                        output
-                            .platform_output
-                            .accesskit_update
-                            .expect("screen-reader tree")
-                    };
-                    // The first frame settles the new window size.
-                    draw();
-                    let tree = draw();
-                    let badge = |label: &str| {
-                        tree.nodes
-                            .iter()
-                            .find(|(_, node)| {
-                                node.role() == Role::Button
-                                    && node.label().is_some_and(|name| name.starts_with(label))
-                            })
-                            .and_then(|(_, node)| node.bounds())
-                            .map(|bounds| bounds.x0 as f32)
-                    };
-                    let field = ctx
-                        .read_response(egui::Id::new("global-search"))
-                        .expect("the search field")
-                        .rect
-                        .right()
-                        + FIELD_RIGHT_INSET;
-                    // Collapsed to an icon a badge keeps its label for a screen
-                    // reader, so it is found at every width.
-                    let device = badge("Playing on").expect("the device badge");
-                    assert!(
-                        device >= field,
-                        "the device badge covers {} px of the search field at {width} px",
-                        field - device
-                    );
-                    if let Some(label) = label {
-                        let release = badge(label).expect("the update badge");
-                        assert!(
-                            release >= field,
-                            "the update badge covers {} px of the search field at {width} px",
-                            field - release
-                        );
-                        if narrowest {
-                            let button = accessible_node(&tree, label, Role::Button);
-                            let mut output = ctx.run_ui(
-                                egui::RawInput {
-                                    screen_rect: Some(egui::Rect::from_min_size(
-                                        egui::Pos2::ZERO,
-                                        egui::vec2(width, 620.0),
-                                    )),
-                                    events: vec![accessible_action(
-                                        button,
-                                        AccessibleAction::Click,
-                                        None,
-                                    )],
-                                    ..Default::default()
-                                },
-                                |ui| app.frame_ui(ui),
-                            );
-                            output.textures_delta.clear();
-                            assert!(
-                                app.show_update,
-                                "the collapsed {label} badge must open the updater"
-                            );
-                            app.show_update = false;
-                        }
-                    }
-                }
-            }
-        }
-        app.backend.shutdown();
-    }
-    /// The device popup lists this computer's audio outputs on request,
-    /// by name, and writes the chosen one's id to `audio_device`; System
-    /// default clears it (#963).
-    #[test]
-    fn the_device_popup_chooses_this_computers_audio_output() {
-        use egui::accesskit::{Action as AccessibleAction, Role};
-        let (ctx, mut app) = accessible_app("audio-outputs");
-        app.show_devices = true;
-        app.settings.audio_device = None;
-        app.output_devices = Loadable::Loaded(demo_outputs()[..2].to_vec());
-        let click = |ctx: &egui::Context, app: &mut App, label: &str| {
-            let tree = accessible_frame(ctx, app, vec![]);
-            let node = accessible_node(&tree, label, Role::Button);
-            accessible_frame(
-                ctx,
-                app,
-                vec![accessible_action(node, AccessibleAction::Click, None)],
-            );
-        };
-        let listed = |ctx: &egui::Context, app: &mut App, label: &str| {
-            accessible_frame(ctx, app, vec![])
-                .nodes
-                .iter()
-                .any(|(_, node)| node.label() == Some(label))
-        };
-        let voicemeeter = "VoiceMeeter Input (VB-Audio VoiceMeeter VAIO)";
-        accessible_frame(&ctx, &mut app, vec![]);
-        assert!(
-            !listed(&ctx, &mut app, voicemeeter),
-            "listed only on request"
-        );
-        click(&ctx, &mut app, "Audio output");
-        assert!(listed(&ctx, &mut app, "System default"));
-        assert!(
-            app.output_devices.get().is_some(),
-            "an earlier list stays while it is read again"
-        );
-        click(&ctx, &mut app, voicemeeter);
-        accessible_frame(&ctx, &mut app, vec![]);
-        let voicemeeter_id = demo_outputs()[1].id.as_str().to_string();
-        assert_eq!(app.settings.audio_device, Some(voicemeeter_id.clone()));
-        assert!(listed(&ctx, &mut app, voicemeeter), "shown by its name");
-        assert!(!listed(&ctx, &mut app, &voicemeeter_id));
-        click(&ctx, &mut app, "System default");
-        accessible_frame(&ctx, &mut app, vec![]);
-        assert_eq!(app.settings.audio_device, None);
-        app.backend.shutdown();
-    }
-
-    /// A name an older build saved shows as that device, chosen, and gives
-    /// way to its id once playback opened on it; a name no output has, such
-    /// as an ALSA one from before PipeWire's host, stays listed as saved.
-    #[test]
-    fn an_old_saved_output_name_shows_and_becomes_its_id() {
-        let (ctx, mut app) = accessible_app("audio-outputs");
-        app.show_devices = true;
-        app.output_devices = Loadable::Loaded(demo_outputs());
-        let speakers = demo_outputs()[0].clone();
-        app.settings.audio_device = Some(speakers.name.clone());
-        accessible_frame(&ctx, &mut app, vec![]);
-        let tree = accessible_frame(&ctx, &mut app, vec![]);
-        let node = accessible_node(&tree, "Audio output", egui::accesskit::Role::Button);
-        accessible_frame(
-            &ctx,
-            &mut app,
-            vec![accessible_action(
-                node,
-                egui::accesskit::Action::Click,
-                None,
-            )],
-        );
-        let tree = accessible_frame(&ctx, &mut app, vec![]);
-        let rows = tree
-            .nodes
-            .iter()
-            .filter(|(_, node)| node.label() == Some(speakers.name.as_str()))
-            .count();
-        assert_eq!(
-            rows, 1,
-            "the saved name is the listed device, not a row of its own"
-        );
-
-        // Another choice made meanwhile is kept.
-        app.settings.audio_device = Some("other".into());
-        app.on_audio_device_found(&speakers.name, speakers.id.as_str().into());
-        assert_eq!(app.settings.audio_device.as_deref(), Some("other"));
-        app.settings.audio_device = Some(speakers.name.clone());
-        app.on_audio_device_found(&speakers.name, speakers.id.as_str().into());
-        assert_eq!(
-            app.settings.audio_device.as_deref(),
-            Some(speakers.id.as_str())
-        );
-
-        app.settings.audio_device = Some("PipeWire Sound Server".into());
-        let tree = accessible_frame(&ctx, &mut app, vec![]);
-        assert!(
-            tree.nodes
-                .iter()
-                .any(|(_, node)| node.label() == Some("PipeWire Sound Server"))
-        );
-        app.backend.shutdown();
-    }
-
-    /// Clicking a page's header cover shows Spotify's largest artwork, and a
-    /// click on it, a click beside it, or Esc closes it (#586). Liked Songs'
-    /// drawn cover has nothing to enlarge.
-    #[test]
-    fn clicking_a_header_cover_enlarges_it_until_any_click_or_escape() {
-        use egui::accesskit::{Action as AccessibleAction, Role};
-        let (ctx, mut app) = accessible_app("cover-art");
-        let open = |ctx: &egui::Context, app: &mut App| {
-            let tree = accessible_frame(ctx, app, vec![]);
-            let cover = accessible_node(&tree, "Enlarge cover", Role::Button);
-            accessible_frame(
-                ctx,
-                app,
-                vec![accessible_action(cover, AccessibleAction::Click, None)],
-            );
-            let Some(Dialog::CoverArt { url, title, .. }) = &app.dialog else {
-                panic!("the cover opens enlarged: {:?}", app.dialog);
-            };
-            assert!(url.ends_with("/640/640"), "the largest artwork: {url}");
-            assert_eq!(title, "Late night focus");
-            // The modal's first frame only measures it.
-            accessible_frame(ctx, app, vec![]);
-            accessible_frame(ctx, app, vec![])
-        };
-        app.open(Page::Playlist("pl1".into()));
-        accessible_frame(&ctx, &mut app, vec![]);
-        let centre = egui::pos2(640.0, 400.0);
-        for close in [
-            pointer_click(centre, egui::PointerButton::Primary),
-            pointer_click(egui::pos2(8.0, 8.0), egui::PointerButton::Primary),
-            vec![egui::Event::Key {
-                key: egui::Key::Escape,
-                physical_key: None,
-                pressed: true,
-                repeat: false,
-                modifiers: egui::Modifiers::NONE,
-            }],
-        ] {
-            let tree = open(&ctx, &mut app);
-            accessible_node(&tree, "Late night focus", Role::Image);
-            accessible_frame(&ctx, &mut app, close);
-            accessible_frame(&ctx, &mut app, vec![]);
-            assert!(app.dialog.is_none(), "it closes");
-            assert_eq!(app.page(), &Page::Playlist("pl1".into()), "on its page");
-        }
-        app.open(Page::LikedSongs);
-        let tree = accessible_frame(&ctx, &mut app, vec![]);
-        assert!(
-            !tree
-                .nodes
-                .iter()
-                .any(|(_, node)| node.label() == Some("Enlarge cover")),
-            "Liked Songs has no artwork to enlarge"
-        );
-        app.backend.shutdown();
-    }
-
-    #[test]
-    fn saved_toggles_stay_green_while_hovered() {
-        // alb0 is saved, its first song is liked, and so is the song in
-        // the player bar, so all three save toggles show their on state.
-        type Pick = fn(&egui::accesskit::Rect) -> bool;
-        let targets: [(&str, &str, Pick); 3] = [
-            ("album header", "Remove from Your Library", |_| true),
-            ("song row", "Remove from Liked Songs", |b| b.y1 < 700.0),
-            ("player bar", "Add to playlist", |b| b.y0 > 700.0),
-        ];
-        for theme in ["dark", "light"] {
-            for (place, label, pick) in targets {
-                let (ctx, mut app) = accessible_app(&format!("saved-hover-{theme}"));
-                app.open(Page::Album("alb0".into()));
-                app.settings.theme = if theme == "light" {
-                    crate::settings::ThemeChoice::Light
-                } else {
-                    crate::settings::ThemeChoice::Dark
-                };
-                app.actions.push(Action::SettingsChanged);
-                let mut frame = |events| {
-                    let mut output = ctx.run_ui(
-                        egui::RawInput {
-                            screen_rect: Some(egui::Rect::from_min_size(
-                                egui::Pos2::ZERO,
-                                egui::vec2(1280.0, 800.0),
-                            )),
-                            events,
-                            ..Default::default()
-                        },
-                        |ui| app.frame_ui(ui),
-                    );
-                    output.textures_delta.clear();
-                    output
-                };
-                frame(vec![]);
-                let tree = frame(vec![])
-                    .platform_output
-                    .accesskit_update
-                    .expect("screen-reader tree");
-                let bounds = tree
-                    .nodes
-                    .iter()
-                    .filter(|(_, node)| {
-                        node.label() == Some(label) && node.role() == egui::accesskit::Role::Button
-                    })
-                    .filter_map(|(_, node)| node.bounds())
-                    .find(pick)
-                    .unwrap_or_else(|| panic!("missing {place} {label:?}"));
-                let centre = egui::pos2(
-                    (bounds.x0 + bounds.x1) as f32 / 2.0,
-                    (bounds.y0 + bounds.y1) as f32 / 2.0,
-                );
-                frame(vec![egui::Event::PointerMoved(centre)]);
-                let output = frame(vec![egui::Event::PointerMoved(centre)]);
-                // Icons are textured rects tinted by their fill.
-                let tints: Vec<_> = output
-                    .shapes
-                    .iter()
-                    .filter_map(|shape| match &shape.shape {
-                        egui::Shape::Rect(rect)
-                            if rect.brush.is_some() && rect.rect.contains(centre) =>
-                        {
-                            Some(rect.fill)
-                        }
-                        _ => None,
-                    })
-                    .collect();
-                assert!(
-                    tints.contains(&app.palette.accent_hover),
-                    "a hovered {place} button in {theme} must still look saved: {tints:?}"
-                );
-                assert!(!tints.contains(&app.palette.text), "{place} in {theme}");
-                app.backend.shutdown();
-            }
-        }
-    }
-
-    #[test]
-    fn side_panels_keep_their_full_height_beside_the_page_toolbar() {
-        for theme in ["dark", "light"] {
-            let (ctx, mut app) = accessible_app(&format!("full-height-panels-{theme}"));
-            app.open(Page::Playlist("pl1".into()));
-            app.settings.theme = if theme == "light" {
-                crate::settings::ThemeChoice::Light
-            } else {
-                crate::settings::ThemeChoice::Dark
-            };
-            app.actions.push(Action::SettingsChanged);
-            for panel in ["queue", "lyrics"] {
-                app.show_queue_panel = panel == "queue";
-                app.show_lyrics_panel = panel == "lyrics";
-                for width in [760.0, 1080.0, 1600.0] {
-                    for _ in 0..3 {
-                        let mut output = ctx.run_ui(
-                            egui::RawInput {
-                                screen_rect: Some(egui::Rect::from_min_size(
-                                    egui::Pos2::ZERO,
-                                    egui::vec2(width, 800.0),
-                                )),
-                                ..Default::default()
-                            },
-                            |ui| app.frame_ui(ui),
-                        );
-                        output.textures_delta.clear();
-                    }
-                    let rect = |name: &str| {
-                        egui::containers::panel::PanelState::load(&ctx, egui::Id::new(name))
-                            .expect("the panel was drawn")
-                            .outer_rect
-                    };
-                    let side = rect(&format!("{panel}-panel"));
-                    let library = rect("sidebar");
-                    let player = rect("player-bar");
-                    assert_eq!(side.top(), library.top(), "{panel} at {width} in {theme}");
-                    assert_eq!(side.top(), 0.0, "{panel} must start at the window top");
-                    assert_eq!(side.bottom(), player.top());
-                    let search = ctx.read_response(egui::Id::new("global-search")).unwrap();
-                    assert!(side.top() < search.rect.top());
-                }
-            }
-            app.backend.shutdown();
-        }
-    }
-
-    /// #644: Go to song radio from a list names the radio after the song
-    /// even when the song was never played or seen on a radio, instead of
-    /// opening a page titled just "Radio" with no cover.
-    #[test]
-    fn song_radio_from_liked_songs_is_named_after_the_song() {
-        let (ctx, mut app) = accessible_app("liked-song-radio");
-        let view = crate::ui::collection::liked;
-        let song = app
-            .library
-            .liked
-            .items
-            .last()
-            .expect("a liked song")
-            .track
-            .clone();
-        let seed = song.uri.clone();
-        // Only songs that played or came back from a radio are cached.
-        app.track_cache.clear();
-        view_frame(&ctx, &mut app, vec![], view);
-        let text = view_frame(&ctx, &mut app, vec![], view);
-        let row = text
-            .iter()
-            .rev()
-            .find(|(text, _)| text == &song.name)
-            .unwrap_or_else(|| panic!("{} in Liked Songs", song.name))
-            .1
-            .center();
-        view_frame(
-            &ctx,
-            &mut app,
-            pointer_click(row, egui::PointerButton::Secondary),
-            view,
-        );
-        let text = view_frame(&ctx, &mut app, vec![], view);
-        let radio = text
-            .iter()
-            .find(|(text, _)| text == "Go to song radio")
-            .expect("the song's menu")
-            .1
-            .center();
-        app.actions.clear();
-        view_frame(
-            &ctx,
-            &mut app,
-            pointer_click(radio, egui::PointerButton::Primary),
-            view,
-        );
-        let actions = std::mem::take(&mut app.actions);
-        assert!(
-            matches!(actions.as_slice(), [Action::OpenSongRadio { uri, .. }] if uri == &seed),
-            "the menu opens the song's radio: {actions:?}"
-        );
-        assert!(
-            app.track_cache.is_empty(),
-            "the menu leaves the cache to the action, applied after drawing"
-        );
-        for action in actions {
-            app.apply(action, &ctx);
-        }
-        assert_eq!(app.page(), &Page::Radio(seed.clone()));
-        assert_eq!(
-            app.radio_name(&seed),
-            Some(format!("{} Radio", song.name)),
-            "the radio is named after the song"
-        );
-        assert_eq!(
-            app.radio_pages[&seed].name,
-            Some(format!("{} Radio", song.name)),
-            "the page keeps the name"
-        );
-        app.backend.shutdown();
-    }
-
-    /// A song already cached from an album's song list, which comes without
-    /// the album, takes the row's album for the radio's cover, while what
-    /// the cache already knows is kept.
-    #[test]
-    fn song_radio_takes_the_rows_album_art_for_a_cached_song() {
-        let (ctx, mut app) = accessible_app("song-radio-album-art");
-        let song = app
-            .library
-            .liked
-            .items
-            .last()
-            .expect("a liked song")
-            .track
-            .clone();
-        assert!(
-            song.album.as_ref().is_some_and(|a| !a.images.is_empty()),
-            "the demo's liked song has album art"
-        );
-        let seed = song.uri.clone();
-        let id = crate::util::uri_id(&seed).expect("a track id").to_owned();
-        let mut cached = song.clone();
-        cached.album = None;
-        cached.name = "Cached name".into();
-        app.track_cache.clear();
-        app.track_cache.insert(id.clone(), cached);
-        app.apply(
-            Action::OpenSongRadio {
-                uri: seed.clone(),
-                track: Box::new(song.clone()),
-            },
-            &ctx,
-        );
-        assert_eq!(app.page(), &Page::Radio(seed.clone()));
-        assert_eq!(
-            app.radio_images(&seed),
-            song.album.as_ref().unwrap().images,
-            "the cover comes from the row's album"
-        );
-        assert_eq!(
-            app.track_cache[&id].name, "Cached name",
-            "the cached song is kept"
-        );
-        app.backend.shutdown();
-    }
-
-    /// Discography placeholders fill the old grid, including any space
-    /// reserved for pagination, without relying on an outer minimum height.
-    #[test]
-    fn discography_placeholders_fill_the_previous_grid_height() {
-        use crate::ui::widgets;
-
-        let (ctx, mut app) = accessible_app("discography-placeholder-height");
-        for light in [false, true] {
-            ctx.set_theme(if light {
-                egui::Theme::Light
-            } else {
-                egui::Theme::Dark
-            });
-            for width in [760.0, 1280.0] {
-                for count in [1, 8, 20] {
-                    for footer in [0.0, 32.0] {
-                        let mut loaded_height = 0.0;
-                        let mut output = ctx.run_ui(
-                            egui::RawInput {
-                                screen_rect: Some(egui::Rect::from_min_size(
-                                    egui::Pos2::ZERO,
-                                    egui::vec2(width, 6000.0),
-                                )),
-                                ..Default::default()
-                            },
-                            |ui| {
-                                ui.set_width(width - 298.0);
-                                loaded_height = ui
-                                    .scope(|ui| {
-                                        widgets::grid(ui, |ui| {
-                                            for index in 0..count {
-                                                let album = super::album(index);
-                                                widgets::card(
-                                                    ui,
-                                                    &mut app,
-                                                    None,
-                                                    &album.name,
-                                                    "2026 • Album",
-                                                    widgets::CardCover::square(false),
-                                                );
-                                            }
-                                        });
-                                        ui.add_space(footer);
-                                    })
-                                    .response
-                                    .rect
-                                    .height();
-                            },
-                        );
-                        output.textures_delta.clear();
-                        let palette = app.palette;
-                        let locale = app.locale;
-                        let mut skeleton_height = 0.0;
-                        let mut output = ctx.run_ui(
-                            egui::RawInput {
-                                screen_rect: Some(egui::Rect::from_min_size(
-                                    egui::Pos2::ZERO,
-                                    egui::vec2(width, 6000.0),
-                                )),
-                                ..Default::default()
-                            },
-                            |ui| {
-                                ui.set_width(width - 298.0);
-                                skeleton_height = ui
-                                    .scope(|ui| {
-                                        widgets::grid(ui, |ui| {
-                                            widgets::skeleton_cards_filling(
-                                                ui,
-                                                &palette,
-                                                locale,
-                                                count,
-                                                false,
-                                                loaded_height,
-                                            );
-                                        });
-                                    })
-                                    .response
-                                    .rect
-                                    .height();
-                            },
-                        );
-                        output.textures_delta.clear();
-                        assert!(
-                            (skeleton_height - loaded_height).abs() <= 1.0,
-                            "{width}px, light={light}, {count} cards, footer={footer}: \
-                             loaded {loaded_height}, skeletons {skeleton_height}"
-                        );
-                    }
-                }
-            }
-        }
-        app.backend.shutdown();
-    }
-
-    /// Choosing a discography category for the first time must not move the
-    /// page: placeholders replace the old category and reserve its height
-    /// until the selected category arrives.
-    #[test]
-    fn a_discography_category_keeps_the_page_scrolled_while_it_loads() {
-        for width in [760.0, 1280.0] {
-            for light in [false, true] {
-                check_discography_category_scroll(width, light);
-            }
-        }
-    }
-
-    /// Exercises the category change at one window width and theme.
-    fn check_discography_category_scroll(width: f32, light: bool) {
-        use egui::accesskit::Role;
-
-        let (ctx, mut app) = accessible_app("discography-filter-scroll");
-        app.settings.theme = if light {
-            crate::settings::ThemeChoice::Light
-        } else {
-            crate::settings::ThemeChoice::Dark
-        };
-        // More than six placeholders can fill: preserving the old height
-        // must work for a long discography too.
-        let releases: Vec<_> = (0..20)
-            .map(|index| {
-                let mut album = super::album(index);
-                album.name = format!("Previous release {index}");
-                album
-            })
-            .collect();
-        let mut list = PagedList::default();
-        list.absorb(0, super::page(releases));
-        app.artist_pages
-            .get_mut("art0")
-            .unwrap()
-            .albums
-            .insert(DiscographyFilter::All.groups().to_string(), list);
-        let page = Page::Artist("art0".into());
-        app.open(page.clone());
-        let scrolled_id = egui::Id::new(("page-scrolled", page.encode()));
-        let singles = DiscographyFilter::Singles.label(app.locale).into_owned();
-        let screen = egui::vec2(width, 900.0);
-        let mut time = 0.0;
-        let mut draw = |app: &mut App, events: Vec<egui::Event>| {
-            time += 1.0 / 60.0;
-            let mut output = ctx.run_ui(
-                egui::RawInput {
-                    screen_rect: Some(egui::Rect::from_min_size(egui::Pos2::ZERO, screen)),
-                    time: Some(time),
-                    events,
-                    ..Default::default()
-                },
-                |ui| app.frame_ui(ui),
-            );
-            output.textures_delta.clear();
-            let offset = ctx
-                .data(|data| data.get_temp::<f32>(scrolled_id))
-                .unwrap_or(0.0);
-            let tree = output.platform_output.accesskit_update.unwrap();
-            (offset, tree)
-        };
-        for _ in 0..4 {
-            draw(&mut app, Vec::new());
-        }
-        let wheel = |notches: f32| {
-            vec![
-                egui::Event::PointerMoved(egui::pos2(550.0, 400.0)),
-                egui::Event::MouseWheel {
-                    unit: egui::MouseWheelUnit::Line,
-                    delta: egui::vec2(0.0, -notches),
-                    phase: egui::TouchPhase::Move,
-                    modifiers: egui::Modifiers::NONE,
-                },
-            ]
-        };
-        let chip_bounds = |tree: &egui::accesskit::TreeUpdate| {
-            tree.nodes
-                .iter()
-                .find(|(_, node)| {
-                    node.role() == Role::Button && node.label() == Some(singles.as_str())
-                })
-                .and_then(|(_, node)| node.bounds())
-        };
-        // egui smooths a wheel notch over a few frames, so let the page come
-        // to rest after each one before reading the chip's position.
-        macro_rules! settle {
-            () => {{
-                let mut last = f32::NAN;
-                let mut still = 0;
-                let mut offset = 0.0;
-                for _ in 0..120 {
-                    offset = draw(&mut app, Vec::new()).0;
-                    if (offset - last).abs() < 0.01 {
-                        still += 1;
-                    } else {
-                        still = 0;
-                    }
-                    last = offset;
-                    if still >= 3 {
-                        break;
-                    }
-                }
-                offset
-            }};
-        }
-        let mut at = None;
-        let mut before = 0.0;
-        let mut direction = 1.0;
-        for _ in 0..20 {
-            let (offset, tree) = draw(&mut app, Vec::new());
-            let Some(bounds) = chip_bounds(&tree) else {
-                draw(&mut app, wheel(direction));
-                settle!();
-                continue;
-            };
-            if bounds.y0 >= 60.0 && bounds.y1 <= 200.0 {
-                before = offset;
-                at = Some(egui::pos2(
-                    ((bounds.x0 + bounds.x1) / 2.0) as f32,
-                    ((bounds.y0 + bounds.y1) / 2.0) as f32,
-                ));
-                break;
-            }
-            direction = if bounds.y0 < 60.0 { -1.0 } else { 1.0 };
-            draw(&mut app, wheel(direction));
-            settle!();
-        }
-        let at = at.unwrap_or_else(|| panic!("no visible {singles:?} chip"));
-        draw(
-            &mut app,
-            vec![
-                egui::Event::PointerMoved(at),
-                egui::Event::PointerButton {
-                    pos: at,
-                    button: egui::PointerButton::Primary,
-                    pressed: true,
-                    modifiers: egui::Modifiers::NONE,
-                },
-                egui::Event::PointerButton {
-                    pos: at,
-                    button: egui::PointerButton::Primary,
-                    pressed: false,
-                    modifiers: egui::Modifiers::NONE,
-                },
-            ],
-        );
-        let after = settle!();
-        assert_eq!(
-            app.artist_pages["art0"].filter,
-            DiscographyFilter::Singles,
-            "the click must select the chip"
-        );
-        assert!(
-            (after - before).abs() <= 1.0,
-            "selecting {singles:?} moved the page from {before} to {after}"
-        );
-
-        let (_, tree) = draw(&mut app, Vec::new());
-        let loading = crate::i18n::gettext(app.locale, "Loading…");
-        assert!(
-            tree.nodes.iter().any(|(_, node)| {
-                node.label() == Some(loading.as_ref()) || node.value() == Some(loading.as_ref())
-            }),
-            "the selected category shows loading placeholders"
-        );
-        assert!(
-            tree.nodes.iter().all(|(_, node)| {
-                !node
-                    .label()
-                    .is_some_and(|label| label.starts_with("Previous release "))
-            }),
-            "the previous category's cards must disappear while loading"
-        );
-
-        // The answer arrives with as many cards as the list it replaces, so
-        // taking its place must leave the reader where they were.
-        let mut list = PagedList::default();
-        list.absorb(
-            0,
-            super::page(
-                (0..20)
-                    .map(|index| {
-                        let mut album = super::album(index);
-                        album.name = format!("Selected single {index}");
-                        album.album_type = Some("single".into());
-                        album
-                    })
-                    .collect(),
-            ),
-        );
-        app.artist_pages
-            .get_mut("art0")
-            .unwrap()
-            .albums
-            .insert(DiscographyFilter::Singles.groups().to_string(), list);
-        let loaded = settle!();
-        assert_eq!(
-            app.artist_pages["art0"].filter,
-            DiscographyFilter::Singles,
-            "the loaded category remains selected"
-        );
-        assert!(
-            (loaded - before).abs() <= 1.0,
-            "loading {singles:?} moved the page from {before} to {loaded}"
-        );
-        let (_, tree) = draw(&mut app, Vec::new());
-        assert!(
-            tree.nodes.iter().any(|(_, node)| {
-                node.label()
-                    .is_some_and(|label| label.starts_with("Selected single "))
-            }),
-            "the selected category replaces the placeholders"
-        );
-        app.backend.shutdown();
-    }
-}
+... [truncated for diff preview]

@@ -91,7 +91,7 @@ struct API_AVAILABLE(macos(14.2)) Route {
         if (AudioObjectGetPropertyData(kAudioObjectSystemObject, &address, sizeof pid, &pid, &size, &process) || !process)
             return false; // Soloist has not opened its audio device yet.
         description = [[CATapDescription alloc] initStereoMixdownOfProcesses:@[@(process)]];
-        description.name = @"Spotifast Soloist";
+        description.name = @"Resonix Soloist";
         description.privateTap = YES;
         // Waiting for permission must not silence ordinary playback.
         description.muteBehavior = CATapUnmuted;
@@ -103,7 +103,7 @@ struct API_AVAILABLE(macos(14.2)) Route {
             || format.mSampleRate < 8000 || format.mSampleRate > 192000)
             throw static_cast<OSStatus>(kAudioHardwareUnsupportedOperationError);
         output = get<AudioObjectID>(kAudioObjectSystemObject, kAudioHardwarePropertyDefaultOutputDevice);
-        NSDictionary *aggregate = @{@kAudioAggregateDeviceNameKey:@"Spotifast Soloist (private)",
+        NSDictionary *aggregate = @{@kAudioAggregateDeviceNameKey:@"Resonix Soloist (private)",
             @kAudioAggregateDeviceUIDKey:NSUUID.UUID.UUIDString, @kAudioAggregateDeviceIsPrivateKey:@YES,
             @kAudioAggregateDeviceTapAutoStartKey:@YES,
             @kAudioAggregateDeviceTapListKey:@[@{@kAudioSubTapUIDKey:description.UUID.UUIDString,
@@ -184,7 +184,7 @@ int run(uint32_t pid, void *context, Control control, Process process, Event eve
     }
 }
 }
-extern "C" int spotifast_soloist_audio(uint32_t pid, void *context, Control control, Process process, Event event) {
+extern "C" int resonix_soloist_audio(uint32_t pid, void *context, Control control, Process process, Event event) {
     @autoreleasepool {
         if (@available(macOS 14.2, *)) return run(pid, context, control, process, event);
         return static_cast<int>(kAudioHardwareUnsupportedOperationError);
