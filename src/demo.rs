@@ -4504,7 +4504,7 @@ mod tests {
         );
         let name = texts
             .iter()
-            .find(|(text, _)| text == "Carmine Paolino")
+            .find(|(text, _)| text == "ARCn")
             .map(|(_, rect)| rect.center())
             .expect("the author's name");
         app.actions.clear();
@@ -4561,10 +4561,8 @@ mod tests {
             let text = settings_text(&ctx, &mut app, query);
             assert!(!text.iter().any(|text| text == "Audio output"), "{query}");
         }
-        app.local_playback =
-            crate::backend::LocalPlayback::Failed("Test connection failure".into());
-        let text = settings_text(&ctx, &mut app, "connection failure");
-        assert!(text.iter().any(|text| text == "Status: Unavailable"));
+        let text = settings_text(&ctx, &mut app, "cache space");
+        assert!(text.iter().any(|text| text == "Audio quality"));
         app.backend.shutdown();
     }
 

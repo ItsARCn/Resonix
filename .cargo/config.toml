@@ -1,3 +1,9 @@
+# projectm-sys links libprojectM from <out>/lib/, while Fedora/RPM CMake
+# defaults to lib64/. Setting CMAKE_INSTALL_LIBDIR=lib fixes Fedora builds;
+# Windows overrides CMAKE_TOOLCHAIN_FILE with vcpkg inside projectm-sys/build.rs.
+[env]
+CMAKE_TOOLCHAIN_FILE = { value = "packaging/rpm/libdir.cmake", relative = true }
+
 # Windows downloads are standalone. Keep the MSVC runtime in the executable
 # so both the portable zip and the installer work on a clean machine.
 [target.x86_64-pc-windows-msvc]

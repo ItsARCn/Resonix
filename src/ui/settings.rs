@@ -63,7 +63,7 @@ impl<'a> RowText<'a> {
 }
 
 /// The guide to writing a palette file for the themes folder.
-const THEMES_GUIDE_URL: &str = "https://spotifast.rocks/settings-and-files/#custom-themes";
+const THEMES_GUIDE_URL: &str = "https://github.com/ItsARCn/Resonix";
 /// Saving the equalizer as a named preset, and deleting the saved preset
 /// that is in use (#702).
 fn eq_preset_controls(app: &mut App, ui: &mut egui::Ui, current: Option<&str>) {
@@ -1463,7 +1463,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
         gettext(locale, "Mode, host, port, username and password"),
         gettext(
             locale,
-            "Off, System, HTTP or SOCKS5 proxy for network requests.",
+            "Off, System, HTTP or SOCKS5 proxy for artwork, lyrics, updates, and preset downloads.",
         ),
     )];
     if section_matches(&needle, &proxy, &proxy_rows) {
@@ -1936,7 +1936,10 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                 .join(" "),
         ),
     ];
-    if visualizers && section_matches(&needle, "MilkDrop", &milkdrop_rows) {
+    if cfg!(feature = "milkdrop")
+        && visualizers
+        && section_matches(&needle, "MilkDrop", &milkdrop_rows)
+    {
         any_visible = true;
         section(ui, &palette, "MilkDrop", |ui| {
             filtered_row(ui, &palette, &needle, "MilkDrop", &milkdrop_rows[0], |ui| {

@@ -524,7 +524,8 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                 {
                     app.actions.push(Action::Open(Page::Settings));
                 }
-                if app.visualizers_available()
+                if cfg!(feature = "milkdrop")
+                    && app.visualizers_available()
                     && theme::icon_button(
                         ui,
                         Icon::AudioLines,

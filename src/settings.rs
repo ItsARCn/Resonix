@@ -697,6 +697,11 @@ impl Settings {
                 });
                 settings.migrate_proxy(text);
                 settings.forget_unusable_screen_rate();
+                if matches!(settings.skin.as_deref(), Some("Spotifast Tall")) {
+                    settings.skin = Some(crate::skin::RIBBON.into());
+                } else if matches!(settings.skin.as_deref(), Some("Spotifast Wide")) {
+                    settings.skin = Some(crate::skin::WIDE.into());
+                }
                 settings.proxy_password_legacy = !settings.proxy_password.is_empty();
                 settings
             }

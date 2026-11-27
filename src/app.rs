@@ -14298,11 +14298,22 @@ impl App {
                 }
             }
             Action::ToggleWinampMilkdrop => {
-                self.settings.milkdrop_open = !self.settings.milkdrop_open;
-                self.settings_dirty = true;
+                #[cfg(not(feature = "milkdrop"))]
+                {
+                    self.settings.milkdrop_open = false;
+                    self.toast_error(gettext(
+                        self.locale,
+                        "MilkDrop is disabled in this build (run without --no-default-features to enable it).",
+                    ));
+                    return;
+                }
                 #[cfg(feature = "milkdrop")]
-                if self.settings.milkdrop_open {
-                    self.fetch_presets_if_none(ctx);
+                {
+                    self.settings.milkdrop_open = !self.settings.milkdrop_open;
+                    self.settings_dirty = true;
+                    if self.settings.milkdrop_open {
+                        self.fetch_presets_if_none(ctx);
+                    }
                 }
             }
             Action::MilkdropEffect(by) => {
