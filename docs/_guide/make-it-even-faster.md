@@ -26,12 +26,12 @@ Spotify limits how often each Client ID can ask for information. The one you
 [registered](/getting-started/#make-a-spotify-app) has an allowance that is
 yours alone. If you register several, they share your account's allowance, following Spotify's
 [July 2026 quota update](https://developer.spotify.com/blog/2026-07-23-web-api-quota-updates).
-When it runs out for a while, Spotify asks Spotifast to wait. The top bar
-shows a spinner while you wait; hover over it to see whether Spotifast is
+When it runs out for a while, Spotify asks Resonix to wait. The top bar
+shows a spinner while you wait; hover over it to see whether Resonix is
 updating your library, checking for updates, or waiting for Spotify. Your
 playlists and Home show what they showed last time until the update arrives.
 
-Setting up playback on this computer spends less of that allowance. Spotifast
+Setting up playback on this computer spends less of that allowance. Resonix
 then reads your playlist list, other people's playlists, popular songs and
 related artists through its music connection, which uses none of it, and
 which can read the playlists Spotify keeps from registrations like yours, its
@@ -44,16 +44,16 @@ Spotify allows a registration like yours ten search results at a time for each t
 
 Earlier versions signed everyone in through one shared sign-in, which the
 ncspot project registered. It stopped taking new sign-ins in October 2026
-([#1057](https://github.com/crmne/spotifast/issues/1057)), and Spotify no
+([#1057](https://github.com/ItsARCn/Resonix/issues/1057)), and Spotify no
 longer gives a project like this one a registration everyone can share. Spotify's
 own client, which playback uses, can't stand in either: Spotify turns its
 requests for your library and the catalogue away as too many.
 
 If you were signed in that way, you stay signed in until Spotify stops
 accepting it. Then the sign-in screen tells you so and shows how to register
-Spotifast. You can switch sooner in **Settings**, under **Spotify
+Resonix. You can switch sooner in **Settings**, under **Spotify
 registration**: paste your Client ID and choose **Authorize**. With Premium,
-Spotifast suggests this once, and again with a banner when Spotify slows the
+Resonix suggests this once, and again with a banner when Spotify slows the
 shared sign-in down, at most once a day and not again after you close it three
 times.
 
@@ -61,8 +61,8 @@ While both are signed in, your Client ID answers what it can, and the shared
 sign-in still lists your playlists and finds playlists in a search, which
 Spotify keeps from registrations like yours.
 
-## Register Spotifast with Spotify {#make-a-spotify-app}
+## Register Resonix with Spotify {#make-a-spotify-app}
 
 The steps are in [Getting Started](/getting-started/#make-a-spotify-app).
 
-![Settings, with Spotifast registered](/assets/images/make-it-even-faster.png)
+![Settings, with Resonix registered](/assets/images/make-it-even-faster.png)

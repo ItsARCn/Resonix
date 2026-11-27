@@ -5,11 +5,11 @@ nav_order: 5
 permalink: /soloist/
 ---
 
-Available since Spotifast 0.15.
+Available since Resonix 0.15.
 
 ![Soloist setup, asking you to choose Soloist in the Spotify desktop app](/assets/images/soloist-setup.png)
 
-Spotifast can run [Spotify Soloist](https://developer.spotify.com/documentation/soloist)
+Resonix can run [Spotify Soloist](https://developer.spotify.com/documentation/soloist)
 as its first setup choice. New listeners and people updating see **Set up
 Soloist** after sign-in on supported platforms with a Premium account.
 Setup shows the key, download and pairing steps; this guide holds the details
@@ -19,23 +19,23 @@ remembered across launches and updates; existing Soloist listeners continue
 straight into the app. An interrupted setup resumes on the next launch.
 Soloist is Spotify's separate software, downloaded from Spotify when you
 choose to enable it. It supports lossless playback; its current API does
-not report the audio format actually delivered, so Spotifast does not show
+not report the audio format actually delivered, so Resonix does not show
 a lossless indicator or offer an unsupported quality selector.
 
 ## Setup
 
-1. Sign in to Spotify in Spotifast. Spotify Premium is required.
+1. Sign in to Spotify in Resonix. Spotify Premium is required.
 2. Choose **Set up Soloist**, and follow the three steps. You can also start
    from **Settings → Spotify Soloist** later.
 3. Copy your personal key from
    [Spotify's Soloist page](https://developer.spotify.com/dashboard/soloist).
    It is separate from the Client ID of your Web API app. Paste it and choose
-   **Download Soloist**. Spotifast saves the key in the system credential store
+   **Download Soloist**. Resonix saves the key in the system credential store
    and downloads Spotify's build for this computer, showing its progress. No
    administrator account is needed.
 4. Open the Spotify desktop app on the same network, signed into the same
-   account, and play a song. Choose the exact **Spotifast Soloist (…)** name
-   shown in setup from Spotify's list of devices. Spotifast checks that this
+   account, and play a song. Choose the exact **Resonix Soloist (…)** name
+   shown in setup from Spotify's list of devices. Resonix checks that this
    player appears in your signed-in account's device list before controlling
    it. Choose **Start listening** once setup confirms the account.
 
@@ -56,12 +56,12 @@ started it. The built-in player's separate browser approval is requested only
 if it is not already connected. Setup does not stop existing playback merely
 because its screen is shown. It does not download Soloist until you supply a key.
 The remembered setup step lives in `session.json`, separately from playback
-preferences. The headphones badge is Spotifast's playback icon, not a Soloist
+preferences. The headphones badge is Resonix's playback icon, not a Soloist
 brand mark.
 
 Pairing is normally needed only once. Soloist restores its own saved session
-when Spotifast starts. You can still choose another Spotify Connect device.
-Spotifast shows its managed player as **This computer**, with a small Soloist
+when Resonix starts. You can still choose another Spotify Connect device.
+Resonix shows its managed player as **This computer**, with a small Soloist
 label in the device picker. It does not show a remote-playback badge for it.
 Once Soloist is ready, the inactive built-in player's duplicate entry is hidden.
 Choose **Turn off Soloist** in Settings to stop it and restore the built-in
@@ -69,7 +69,7 @@ player's entry and settings. Saved built-in preferences are kept.
 While Soloist is enabled, built-in playback preferences are hidden. On Linux
 with PipeWire, EQ and visualization settings appear once the private Soloist
 audio route is established, even while paused. This is automatic and separate
-from account verification. Shared controls for the tray, startup and Spotifast updates remain
+from account verification. Shared controls for the tray, startup and Resonix updates remain
 under **Application**. **Settings → Spotify Soloist** holds its rows: status,
 with the one action that helps when it needs you, version and expiry, audio
 quality, **Spotify access** and **Turn off Soloist**, with a link to this guide.
@@ -85,7 +85,7 @@ fallback.
 Setup is for setting up. Once you have finished it, nothing Soloist does takes
 the app away, and it is never reopened except by your own choice. If Soloist
 stops while you listen, your library stays open and a banner says so.
-Spotifast starts it again by itself, up to three times, after 2, 10 and 30
+Resonix starts it again by itself, up to three times, after 2, 10 and 30
 seconds, and picks up what was playing unless something else is playing by
 then. A song you choose meanwhile waits and starts when Soloist is back. After
 that, or for a problem restarting cannot fix, such as a locked credential
@@ -97,15 +97,15 @@ sign-in Spotify has not finished verifying is retried by itself.
 One short device list from Spotify does not unbind a running, signed-in Soloist.
 
 **Use the built-in player** stays available as a small link below each setup card.
-The saved key and pairing are retained for next time; signing out of Spotifast
-removes them. Closing Spotifast completely stops the child player. Closing to
-the tray leaves both running. A polite request to end Spotifast (SIGTERM from
+The saved key and pairing are retained for next time; signing out of Resonix
+removes them. Closing Resonix completely stops the child player. Closing to
+the tray leaves both running. A polite request to end Resonix (SIGTERM from
 `kill`, a logout or systemd, Ctrl+C in a terminal, or the terminal closing)
 quits it the same way, saving its state; a second request ends it at once.
-The player also ends with Spotifast when Spotifast is killed outright or
+The player also ends with Resonix when Resonix is killed outright or
 crashes: on Linux the kernel stops it when its parent dies, on Windows it runs
-in a job object that closes with Spotifast, and on macOS a small watcher
-process stops it once Spotifast is gone. If an earlier Spotifast still left
+in a job object that closes with Resonix, and on macOS a small watcher
+process stops it once Resonix is gone. If an earlier Resonix still left
 its player running, the next start stops that player first, so it cannot
 block the new one.
 
@@ -117,28 +117,28 @@ may prevent the downloaded program from running or reaching the audio service.
 ## Updates
 
 Soloist builds expire **90 days after their build date**, rather than after
-installation. Spotifast reads the build date from the executable. During its
+installation. Resonix reads the build date from the executable. During its
 last 30 days it checks daily, while running, for a fresh download. It stages
 the replacement without interrupting music, then applies it when the player
-is inactive or Spotifast restarts. A paused active session also waits, to
+is inactive or Resonix restarts. A paused active session also waits, to
 preserve its queue. If Spotify has not published a usable replacement, the
 error is shown in the banner and in Settings; the built-in player remains
 available.
 
-A build Spotifast has not run here before is on trial until it plays or keeps
+A build Resonix has not run here before is on trial until it plays or keeps
 running for five minutes. If it crashes twice in a row before then, after it
-has started, Spotifast stops using it on this computer and goes back to the
+has started, Resonix stops using it on this computer and goes back to the
 build it replaced, which stays installed until the new one has proved itself.
-A clean exit, an expired build or a stop Spotifast asked for never counts. When
+A clean exit, an expired build or a stop Resonix asked for never counts. When
 there is no earlier build to go back to, as on a new installation, Soloist's
 status asks you to use the built-in player until Spotify publishes a new
-build. Spotifast never starts the crashing build again: while it runs an
+build. Resonix never starts the crashing build again: while it runs an
 earlier build it checks daily for a newer one, and each time Soloist starts
 without a working build it checks Spotify's server, then tries any build other
 than the one that crashed.
 
 Downloads come directly from `soloist-builds.spotifycdn.com` over HTTPS.
-Spotifast does not bundle or mirror Spotify's executable. Archive extraction
+Resonix does not bundle or mirror Spotify's executable. Archive extraction
 is bounded and rejects links and unsafe paths. A local SHA-256 digest detects
 changes to an installed build; it is not a Spotify signature. Spotify does
 not currently publish a checksum manifest for independent verification.
@@ -150,13 +150,13 @@ Volume, shuffle and repeat use the normal player controls. Soloist's
 does not currently expose preferences for quality, normalization, autoplay,
 gapless playback or crossfade. Its
 [startup options](https://developer.spotify.com/documentation/soloist/reference/command-line)
-include a cache-size limit and a PipeWire output on Linux; Spotifast does not
+include a cache-size limit and a PipeWire output on Linux; Resonix does not
 yet expose those as Soloist preferences.
 
-Library browsing, search and playlist management keep using Spotifast's
+Library browsing, search and playlist management keep using Resonix's
 existing Spotify connections. Soloist's loopback API handles basic playback
 controls, state and queue reads. If its event connection drops while Soloist
-is still available, Spotifast reconnects it. A second drop within 30 seconds
+is still available, Resonix reconnects it. A second drop within 30 seconds
 restarts the player, as described under Setup.
 Starting a collection at a chosen row goes
 through the existing Spotify playback request, retaining its context and
@@ -176,19 +176,19 @@ outage; a failed request is never saved as "no lyrics".
 
 Soloist exposes queue additions and reads, but no public command to remove,
 reorder, clear or insert at the front of its queue. Those editing controls
-remain available with the built-in player. Spotifast does not pretend to
+remain available with the built-in player. Resonix does not pretend to
 edit a Soloist queue by replacing the playing playlist. Spotify's Connect
 queue-write mechanisms may offer a future route, but have not been verified
 for Soloist's queue identities and concurrent updates.
 
-On Linux with PipeWire, Spotifast routes its own Soloist process through a
+On Linux with PipeWire, Resonix routes its own Soloist process through a
 private audio input, using Soloist's documented `--pipewire-device` option.
 The existing equalizer, spectrum, oscilloscope and MilkDrop work on this route.
 The equalizer runs at the output's negotiated sample rate; the visualization
 copy is converted to 44.1 kHz. Visualizers receive audio after EQ and before
 volume, so zero volume still animates. Spotify's reported volume controls the
 final output gain, including changes made from another Spotify client. A slider
-moved in Spotifast or a skin is heard at once, and Soloist is told behind it.
+moved in Resonix or a skin is heard at once, and Soloist is told behind it.
 
 The route holds about 60 ms of audio, or two graph cycles if those are longer,
 so a late wake-up in Soloist doesn't become a dropout. When that margin runs
@@ -196,16 +196,16 @@ low it is rebuilt by playing up to 0.5% slow, too little to hear, and repeated
 dropouts raise it to at most 250 ms until things stay clean again. The clock
 and lyrics follow the delay as it changes.
 
-While Soloist plays, Spotifast asks rtkit to run its three audio threads
+While Soloist plays, Resonix asks rtkit to run its three audio threads
 realtime, at SCHED_RR priority 15. That puts them above the realtime threads
 browsers and other audio libraries ask rtkit for, at priority 10, and below
-PipeWire's own data loops, which rtkit runs at its maximum of 20. Spotifast
+PipeWire's own data loops, which rtkit runs at its maximum of 20. Resonix
 starts Soloist with a 200 ms realtime CPU limit (`RLIMIT_RTTIME`), which rtkit
 requires: an audio thread that ran that long without sleeping would be stopped
-by the kernel, and Spotifast would start Soloist again, rather than let it hold
-a CPU. `spotifast.log` says when that happens.
+by the kernel, and Resonix would start Soloist again, rather than let it hold
+a CPU. `resonix.log` says when that happens.
 
-Spotifast checks what each thread really runs at rather than trusting rtkit's
+Resonix checks what each thread really runs at rather than trusting rtkit's
 answer. rtkit allows only so many requests in a burst, and a browser starting
 up can use them all, so a thread that is refused is asked again, every 2
 seconds at first and then less often, up to every 30 seconds, until it runs
@@ -214,7 +214,7 @@ it gets nice -11 where that is allowed. The log says once why a thread was
 refused, and again when all of them are raised.
 
 Anything that goes wrong on the route is counted and goes to
-`spotifast.log` at most every 10 seconds.
+`resonix.log` at most every 10 seconds.
 
 The route uses native PipeWire streams and the system's default output. It
 needs no extra command-line tools, virtual audio driver, or persistent audio
@@ -223,11 +223,11 @@ filter. No microphone or system mix is captured, and samples are never saved
 to disk. Pausing clears buffered samples; closing Soloist removes the route.
 If PipeWire is unavailable at startup, Soloist uses its ordinary output and
 EQ and visualizer controls stay hidden. A route that fails during playback
-does not stop the player: Spotifast rebuilds the route up to three times while
+does not stop the player: Resonix rebuilds the route up to three times while
 Soloist keeps running, and restarts the player as described under Setup only
 if that does not work. Only Soloist's own audio reaches the EQ, the visualizers
 and the output: if PipeWire links anything else into the private input,
-Spotifast removes the link, and the input is silent until it has gone.
+Resonix removes the link, and the input is silent until it has gone.
 
 Linux without PipeWire keeps Soloist's direct output, without EQ or visualizers.
 The Mac and Windows routes are described below. Local files and full queue
@@ -242,11 +242,11 @@ bit-perfect or as a DRM workaround.
 
 Regular builds include native process capture on macOS 14.2 or newer and
 Windows build 20348 or newer (including Windows 11). On Mac, allow **System Audio
-Recording** for Spotifast, then play a song: a private Core Audio tap passes
-only Spotifast's Soloist child through its EQ, limiter and visualizers,
+Recording** for Resonix, then play a song: a private Core Audio tap passes
+only Resonix's Soloist child through its EQ, limiter and visualizers,
 including MilkDrop. Until capture receives audio, Soloist's ordinary output
 continues. Denying permission leaves ordinary playback available. Once routed,
-an output-device or sample-rate change stops the player, and Spotifast
+an output-device or sample-rate change stops the player, and Resonix
 restarts it.
 
 On Windows, WASAPI captures only the owned Soloist process and its children
@@ -256,57 +256,57 @@ running. No virtual driver is installed on either platform and no captured
 audio is saved. The Mac playback path keeps the tap's sample rate; only the
 visualization copy is resampled.
 
-On Mac, once capture is ready and Soloist's direct output is muted, Spotifast
-sets Soloist's source volume to 100%. Spotifast's slider controls the redirected
-output after EQ and the visualizers. **Zero in Spotifast keeps the visualizers
+On Mac, once capture is ready and Soloist's direct output is muted, Resonix
+sets Soloist's source volume to 100%. Resonix's slider controls the redirected
+output after EQ and the visualizers. **Zero in Resonix keeps the visualizers
 moving.** Its output level is remembered in the session file and defaults to
 100%, so a low source level no longer limits the slider's maximum.
 
-A volume-change event from Spotify or your phone updates Spotifast's output
-level, then Spotifast restores Soloist to 100%. Spotify's volume indicator
+A volume-change event from Spotify or your phone updates Resonix's output
+level, then Resonix restores Soloist to 100%. Spotify's volume indicator
 therefore returns to 100%; it does not show the listening level. Moving a
-control already at 100% may produce no change event, so use Spotifast's slider
+control already at 100% may produce no change event, so use Resonix's slider
 for predictable control, including restoring full volume. A phone change can
 briefly affect capture before Soloist accepts the reset. Confirmations and
 repeated events from that reset never turn the output up or unmute it.
 
 Before capture is ready, including briefly after reconnecting, Soloist keeps
-its ordinary output and source volume. Spotifast raises the source only after
+its ordinary output and source volume. Resonix raises the source only after
 its private Mac route has taken over the audible output. If Soloist does not
 confirm the full source level within five seconds, the player stops, and
-Spotifast restarts it.
+Resonix restarts it.
 
-Spotify's player starts at a level of its own every launch, so Spotifast keeps
+Spotify's player starts at a level of its own every launch, so Resonix keeps
 the level you left it at and gives it back once the player is signed in. This
 is saved in the session file.
 
-Windows capture comes after Soloist's volume, so Spotifast undoes Soloist's
+Windows capture comes after Soloist's volume, so Resonix undoes Soloist's
 volume curve for the visualizers: they keep their level as the volume falls.
 A muted source sends no signal, so **zero still stops the visualizers**.
 Lowering Soloist in the Windows volume mixer also shrinks them, because
 Soloist does not report that level. The tested WASAPI session and stream
 controls affect capture too, so they cannot supply a separate output fader. Windows 11's
 [pre-volume loopback option](https://learn.microsoft.com/en-us/windows-hardware/drivers/audio/ksproperty-audioloopback)
-refers to endpoint volume, which affects other apps as well. Spotifast leaves
+refers to endpoint volume, which affects other apps as well. Resonix leaves
 that system control alone.
 
 Spotify lists capabilities such as Smart Shuffle, Jam and crossfade for its
-player. Spotifast only offers controls exposed by the documented Soloist API;
+player. Resonix only offers controls exposed by the documented Soloist API;
 those names alone do not establish an integration.
 
 ## Credentials, privacy and terms
 
 What Soloist prints goes to `soloist-output.log` in its private folder for your
 account, with your key removed, and each start replaces the file. It is not
-part of `spotifast.log`. Read it before sharing it: it comes from Spotify's
-program, and Spotifast cannot say what else it contains.
+part of `resonix.log`. Read it before sharing it: it comes from Spotify's
+program, and Resonix cannot say what else it contains.
 
-The key belongs to your Spotify account and is stored with Spotifast's other
+The key belongs to your Spotify account and is stored with Resonix's other
 protected credentials. Soloist currently accepts it only as a command-line
 argument, so software permitted to inspect your processes can read it while
-Soloist runs. Spotifast never logs the key, command line or child output.
+Soloist runs. Resonix never logs the key, command line or child output.
 Soloist's pairing state and cache live under the private `soloist/accounts/`
-folder in Spotifast's state directory. Its binaries and notices live under
+folder in Resonix's state directory. Its binaries and notices live under
 `soloist/builds/`; the `soloist_enabled` setting contains no key.
 
 The local control socket binds only to `127.0.0.1`, on an operating-system
@@ -314,14 +314,14 @@ assigned port. Spotify's socket has no client authentication or browser
 origin protection. Do not forward its port or expose it to a network.
 
 Soloist makes its own Spotify connections and follows Spotify's privacy
-policy. Spotifast's proxy setting applies to the download and Spotifast's
+policy. Resonix's proxy setting applies to the download and Resonix's
 requests, but does not configure Soloist's streaming connections. Spotify's
 binary can have different diagnostics and reporting behaviour from librespot.
-Spotifast adds no telemetry of its own.
+Resonix adds no telemetry of its own.
 
 Soloist remains subject to [Spotify's terms](https://developer.spotify.com/terms)
 and [Developer Policy](https://developer.spotify.com/policy). Availability of
 this optional integration is not a claim of Spotify endorsement or permission
-to redistribute its binaries. Spotifast downloads them for the listener from
+to redistribute its binaries. Resonix downloads them for the listener from
 Spotify's server instead of redistributing them. This integration does not
 bypass Spotify's authentication, subscription checks, expiry or DRM.

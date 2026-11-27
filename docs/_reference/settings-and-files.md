@@ -6,45 +6,45 @@ nav_order: 0
 
 ## Where things live
 
-Linux media controls use `playerctl --player=spotifast`.
+Linux media controls use `playerctl --player=resonix`.
 
-Spotifast follows each platform's conventions. On Linux:
+Resonix follows each platform's conventions. On Linux:
 
 | What | Where | Safe to delete? |
 | --- | --- | --- |
-| Settings | `~/.config/spotifast/settings.json` | Yes, you lose preferences |
-| Winamp and Windows Media Player skins | `~/.config/spotifast/skins/` | Yes, you add them again |
-| MilkDrop presets | `~/.config/spotifast/milkdrop/` | Yes, you fetch them again |
+| Settings | `~/.config/resonix/settings.json` | Yes, you lose preferences |
+| Winamp and Windows Media Player skins | `~/.config/resonix/skins/` | Yes, you add them again |
+| MilkDrop presets | `~/.config/resonix/milkdrop/` | Yes, you fetch them again |
 | Spotify grants (available since 0.8.0) | System credential store | Use Sign out in Settings |
-| Credential revocation markers (available since 0.8.0) | `~/.local/state/spotifast/credential-storage/` | Keep after a failed sign-out deletion |
-| Legacy shared Web API grant | `~/.local/state/spotifast/shared_web_api_token.json` | Removed after migration or sign-out |
-| Legacy personal Web API grant | `~/.local/state/spotifast/personal_web_api_token.json` | Removed after migration or sign-out |
-| Legacy playback credential | `~/.local/state/spotifast/credentials/` | Removed after migration or sign-out |
+| Credential revocation markers (available since 0.8.0) | `~/.local/state/resonix/credential-storage/` | Keep after a failed sign-out deletion |
+| Legacy shared Web API grant | `~/.local/state/resonix/shared_web_api_token.json` | Removed after migration or sign-out |
+| Legacy personal Web API grant | `~/.local/state/resonix/personal_web_api_token.json` | Removed after migration or sign-out |
+| Legacy playback credential | `~/.local/state/resonix/credentials/` | Removed after migration or sign-out |
 | Proxy password | System credential store | Clear the password and apply the manual proxy settings |
-| Legacy proxy password | `~/.local/state/spotifast/proxy_password` | Removed after protected migration |
-| Last session | `~/.local/state/spotifast/session.json` | Yes |
-| Play history | `~/.local/state/spotifast/history.json` | Yes |
-| Audio cache | `~/.cache/spotifast/audio/` | Always |
-| Artwork cache | `~/.cache/spotifast/art/` | Always |
-| Lyrics cache | `~/.cache/spotifast/lyrics/` | Always |
-| Skin previews | `~/.cache/spotifast/skin-previews/` | Always, they are drawn again |
-| Account-scoped playlist page cache | `~/.cache/spotifast/playlists/<account-id>/` | Always |
-| Account-scoped playlist list | `~/.cache/spotifast/library/` | Always |
-| Account-scoped Home shelves | `~/.cache/spotifast/home/` | Always |
-| Last run's log | `~/.local/state/spotifast/spotifast.log` | Always |
-| Crash log | `~/.local/state/spotifast/panic.log` | Always |
+| Legacy proxy password | `~/.local/state/resonix/proxy_password` | Removed after protected migration |
+| Last session | `~/.local/state/resonix/session.json` | Yes |
+| Play history | `~/.local/state/resonix/history.json` | Yes |
+| Audio cache | `~/.cache/resonix/audio/` | Always |
+| Artwork cache | `~/.cache/resonix/art/` | Always |
+| Lyrics cache | `~/.cache/resonix/lyrics/` | Always |
+| Skin previews | `~/.cache/resonix/skin-previews/` | Always, they are drawn again |
+| Account-scoped playlist page cache | `~/.cache/resonix/playlists/<account-id>/` | Always |
+| Account-scoped playlist list | `~/.cache/resonix/library/` | Always |
+| Account-scoped Home shelves | `~/.cache/resonix/home/` | Always |
+| Last run's log | `~/.local/state/resonix/resonix.log` | Always |
+| Crash log | `~/.local/state/resonix/panic.log` | Always |
 
 Starting with your computer (Settings > Playback on this computer) is kept
 where each system keeps it, not in `settings.json`:
 
 | Platform | Where |
 | --- | --- |
-| Linux | `~/.config/autostart/spotifast.desktop` (`$XDG_CONFIG_HOME/autostart`), which runs `spotifast`, with `--start-hidden` for the tray |
-| Flatpak | Registered through the background portal; Spotifast keeps a copy of what it asked for in `~/.var/app/rocks.spotifast.Spotifast/config/autostart/spotifast.desktop` |
-| macOS 13 and later | Login Items: Spotifast itself to open with the window, or the `rocks.spotifast.Spotifast.autostart` agent inside the app, which opens it with `--start-hidden` |
-| Windows | The `Spotifast` value under `HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run` |
+| Linux | `~/.config/autostart/resonix.desktop` (`$XDG_CONFIG_HOME/autostart`), which runs `resonix`, with `--start-hidden` for the tray |
+| Flatpak | Registered through the background portal; Resonix keeps a copy of what it asked for in `~/.var/app/rocks.resonix.Resonix/config/autostart/resonix.desktop` |
+| macOS 13 and later | Login Items: Resonix itself to open with the window, or the `rocks.resonix.Resonix.autostart` agent inside the app, which opens it with `--start-hidden` |
+| Windows | The `Resonix` value under `HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run` |
 
-Deleting the entry turns it off. Uninstalling Spotifast does not remove the
+Deleting the entry turns it off. Uninstalling Resonix does not remove the
 Linux or Windows entry; choose **Off** first.
 
 Settings > Storage shows the current file sizes of the artwork cache, audio
@@ -82,7 +82,7 @@ The following credential storage is available since 0.8.0.
 
 Durable grants use **Secret Service on Linux**, **Keychain on macOS**, and
 **Credential Manager on Windows**, under the service name
-`rocks.spotifast.Spotifast`. Entries are separated by application state
+`rocks.resonix.Resonix`. Entries are separated by application state
 location and grant type; Web grants carry their Client ID and must verify as
 the same account. Playback and receiver activation require that account too.
 Non-secret settings and session data remain readable JSON. Native credential
@@ -98,25 +98,25 @@ used for this session, with no new plaintext fallback file.
 
 On Windows, grants are saved with Enterprise persistence, which survives a
 restart. Since 0.13.2, if Credential Manager refuses that, or keeps the grant
-only until you sign out of Windows, Spotifast saves it again with Local
+only until you sign out of Windows, Resonix saves it again with Local
 persistence, which also survives a restart. Failures are logged with their
 Windows error code, never with the grant.
 
-Since 0.13.4, Spotifast on Windows also keeps a copy of each grant in
+Since 0.13.4, Resonix on Windows also keeps a copy of each grant in
 `credential-storage\` in the data folder, encrypted with the Windows Data
 Protection API so that only your Windows account can read it. Every save
 writes both, and sign-out deletes both. The copy is read only when Credential
 Manager refuses the grant or no longer has it, as on machines where the
 entries disappear during a restart. Grants saved by earlier versions gain
-their copy the next time Spotifast starts.
+their copy the next time Resonix starts.
 
 On upgrade, each legacy grant is written to the protected store and read back
 before its old file is removed. Valid grants migrate without signing in again.
 If Spotify rejects a saved refresh grant, only that grant is forgotten so the
-next launch cannot keep restoring it. If migration fails, Spotifast reports it and
+next launch cannot keep restoring it. If migration fails, Resonix reports it and
 keeps the original so migration can be retried. That grant can still serve the
 current session. A successfully migrated grant is never replaced by a stale
-legacy copy. Librespot's reusable grant stays in memory until Spotifast saves
+legacy copy. Librespot's reusable grant stays in memory until Resonix saves
 it through this same store. Volume and disposable audio caches are independent.
 
 Sign-out invalidates pending authorization, refresh, and playback connections,
@@ -149,13 +149,13 @@ Older proxy passwords, whether in `settings.json` or the separate state file,
 are migrated and read back before their plaintext copies are removed. If that
 fails, the originals remain available for retry. Settings changes stay in
 memory until migration succeeds, so a save cannot erase the only password or
-associate it with a different proxy address. Spotifast reports this condition.
+associate it with a different proxy address. Resonix reports this condition.
 Newly entered passwords have no plaintext fallback. Settings store the confirmed
 proxy mode, host, port, and username, never an unapplied draft or password.
 
 Progress through a playlist is periodically cached as a contiguous prefix.
 When the playlist has not changed on Spotify, reopening it resumes from that
-prefix instead of requesting the same pages again. Spotifast validates the
+prefix instead of requesting the same pages again. Resonix validates the
 cache against Spotify's playlist snapshot and reported song count before
 showing it. A cache with a mismatched count is replaced by live rows even if
 its snapshot matches, so stale cached songs cannot choose the playback order.
@@ -287,49 +287,49 @@ automatic requests and shows a Retry button in the reserved row space.
 Since 0.8.0, Flatpak also preserves the fallback
 state directory used when `XDG_STATE_HOME` is unset. Session state, history,
 logs, and credential revocation markers survive a full quit and relaunch under
-`~/.var/app/rocks.spotifast.Spotifast/.local/state/spotifast/`. Configuration
+`~/.var/app/rocks.resonix.Resonix/.local/state/resonix/`. Configuration
 and caches remain under the app's `config/` and `cache/` directories. State
 already lost on quitting an older release cannot be recovered.
 
 On macOS, settings, state, and the logs are in
-`~/Library/Application Support/me.paolino.spotifast` and the caches in
-`~/Library/Caches/me.paolino.spotifast`. On Windows, settings are in
-`%APPDATA%\paolino\spotifast\config`, state and the logs in
-`%LOCALAPPDATA%\paolino\spotifast\data`, and the caches in
-`%LOCALAPPDATA%\paolino\spotifast\cache`. The main window's size and
-interface memory are in `app.ron`, in `%APPDATA%\spotifast\data` on Windows.
+`~/Library/Application Support/me.paolino.resonix` and the caches in
+`~/Library/Caches/me.paolino.resonix`. On Windows, settings are in
+`%APPDATA%\paolino\resonix\config`, state and the logs in
+`%LOCALAPPDATA%\paolino\resonix\data`, and the caches in
+`%LOCALAPPDATA%\paolino\resonix\cache`. The main window's size and
+interface memory are in `app.ron`, in `%APPDATA%\resonix\data` on Windows.
 
 ### Portable copies
 
-Since 0.13.4, Spotifast started from the Windows ZIP keeps its files in a
-`spotifast-data` folder next to `spotifast.exe`, instead of the folders
-above. It knows it is the ZIP copy by the `spotifast-portable.txt` file beside
+Since 0.13.4, Resonix started from the Windows ZIP keeps its files in a
+`resonix-data` folder next to `resonix.exe`, instead of the folders
+above. It knows it is the ZIP copy by the `resonix-portable.txt` file beside
 it.
 
 | What | Where |
 | --- | --- |
-| Settings, skins, MilkDrop presets, themes | `spotifast-data\config\` |
-| State, history, logs, `app.ron`, credential markers and the encrypted grant copies | `spotifast-data\state\` |
-| Caches | `spotifast-data\cache\` |
+| Settings, skins, MilkDrop presets, themes | `resonix-data\config\` |
+| State, history, logs, `app.ron`, credential markers and the encrypted grant copies | `resonix-data\state\` |
+| Caches | `resonix-data\cache\` |
 
 The first time it starts without that folder, it copies (never moves) your
 settings and state from the folders above, so a ZIP copy you ran before keeps
-your preferences and sign-in. Caches are not copied; Spotifast fills them
-again. The installed Spotifast keeps its own files, and from then on the two
+your preferences and sign-in. Caches are not copied; Resonix fills them
+again. The installed Resonix keeps its own files, and from then on the two
 never share settings, history or caches. The copy is made in
-`spotifast-data.partial` and renamed when complete, so a copy interrupted by
+`resonix-data.partial` and renamed when complete, so a copy interrupted by
 a crash or power cut is made again at the next start.
 
 `app.ron` is in that folder too. A portable copy that has none
-yet starts from a copy of `%APPDATA%\spotifast\data\app.ron`, so the window
+yet starts from a copy of `%APPDATA%\resonix\data\app.ron`, so the window
 opens as you left it. That file stays where it is, because the installed
-Spotifast uses it; without an installed copy you can delete it.
+Resonix uses it; without an installed copy you can delete it.
 
-If Spotifast cannot write next to its executable, for example in
+If Resonix cannot write next to its executable, for example in
 `Program Files` or on read-only media, it uses the folders above and says why
-in the log. Updates replace only `spotifast.exe`, so `spotifast-data` stays as
+in the log. Updates replace only `resonix.exe`, so `resonix-data` stays as
 it is through updates and their rollback. To start a portable copy afresh,
-quit it and delete `spotifast-data`; the next start copies from the folders
+quit it and delete `resonix-data`; the next start copies from the folders
 above again.
 
 Spotify sign-ins themselves are saved in Windows Credential Manager, which
@@ -344,13 +344,13 @@ another folder or drive. On another computer or another Windows account,
 neither Credential Manager nor the encrypted copy can give the sign-in back,
 so sign in again there.
 
-The Linux `.tar.gz` also carries a `spotifast-portable.txt`, but only so the
-updater may replace the executable. Spotifast from it keeps the folders above:
+The Linux `.tar.gz` also carries a `resonix-portable.txt`, but only so the
+updater may replace the executable. Resonix from it keeps the folders above:
 set `XDG_CONFIG_HOME`, `XDG_STATE_HOME` and `XDG_CACHE_HOME` to move them.
 
 The running copy keeps its single-instance files in a private directory:
-`$XDG_RUNTIME_DIR/spotifast` on Linux (inside Flatpak, the app's own runtime
-directory), a `spotifast` folder in your private temporary directory
+`$XDG_RUNTIME_DIR/resonix` on Linux (inside Flatpak, the app's own runtime
+directory), a `resonix` folder in your private temporary directory
 (`$TMPDIR`) on macOS, and an `instance` folder in the state directory on
 Windows. A portable copy has its own, `instance\scope-portable-<id>` in the
 installed state directory, with one `<id>` per portable folder, so it runs
@@ -358,10 +358,10 @@ beside the installed copy and other portable copies instead of handing your
 launches to them. This is the one thing a portable copy keeps outside its
 folder, because the folder may sit on a drive other users can read. It holds
 nothing of yours. `instance.lock` marks the running copy; the system releases it when
-Spotifast quits or crashes. `instance.sock` (Linux and macOS) is the socket
-a second launch and the `spotifast` command reach it through, which only your
+Resonix quits or crashes. `instance.sock` (Linux and macOS) is the socket
+a second launch and the `resonix` command reach it through, which only your
 user can open. On Windows, `instance.key` holds the loopback port and a
-random token that every request must carry. Spotifast writes them on each
+random token that every request must carry. Resonix writes them on each
 start; nothing in them needs keeping.
 
 ## settings.json
@@ -371,7 +371,7 @@ main fields are:
 
 | Field | Default | Meaning |
 | --- | --- | --- |
-| `device_name` | `Spotifast` | Name on Spotify Connect |
+| `device_name` | `Resonix` | Name on Spotify Connect |
 | `bitrate` | `320` | 96, 160, or 320 kbps |
 | `normalisation` | `false` | Volume normalisation |
 | `autoplay` | `true` | Keep playing similar music at the end |
@@ -384,7 +384,7 @@ main fields are:
 | `custom_theme` | `null` | Selected JSON filename from the `themes` folder |
 | `custom_theme_cache` | absent | Last accepted custom palette; preserves appearance if its file is missing or invalid |
 | `system_theme_cache` | absent | Last accepted Omarchy palette for Follow system; retained across restarts |
-| `theme_pair` | absent | The themes Follow system uses in light and dark mode: `{"light": {"filename": "Catppuccin Latte.json", "palette": {...}}, "dark": {...}}`. Each `palette` is the last accepted copy of that file's colours. A missing side, or the whole field, is Spotifast's own Light or Dark; it is written only once you choose one |
+| `theme_pair` | absent | The themes Follow system uses in light and dark mode: `{"light": {"filename": "Catppuccin Latte.json", "palette": {...}}, "dark": {...}}`. Each `palette` is the last accepted copy of that file's colours. A missing side, or the whole field, is Resonix's own Light or Dark; it is written only once you choose one |
 | `accent_from_art` | `true` | Tint pages with album art, and colour the player bar visualizer with the cover's colours |
 | `player_bar_vis` | `off` | Since 0.11.0: what moves behind the player bar while a song plays on this computer: `off`, `spectrum` or `waveform` |
 | `player_bar_vis_click` | `true` | Allow clicks on empty player bar space to cycle visualizer modes |
@@ -392,7 +392,7 @@ main fields are:
 | `library_sort` | `{}` | Per-section Library order overrides, since 0.8.0: `library`, `recently_played`, `name`, `recently_added`, `local`, or `spotify`, where supported |
 | `library_by_you` | `false` | Show only playlists owned by the signed-in account, alongside Liked Songs; applies only to the Playlists shelf |
 | `sidebar_order` | `[]` | Saved local playlist arrangement, including an unpinned Liked Songs, retained when another sort is selected |
-| `pinned_contexts` | `[]` | Local Library pin order; Liked Songs uses `spotifast:liked-songs`, a local key never sent to Spotify |
+| `pinned_contexts` | `[]` | Local Library pin order; Liked Songs uses `resonix:liked-songs`, a local key never sent to Spotify |
 | `liked_songs_pinned` | `true` | Keep Liked Songs in the pin block; older settings place it first until moved |
 | `sidebar_compact` | `false` | Names only in the library sidebar, no covers |
 | `sidebar_grid` | `false` | Library entries as responsive cover cards instead of rows |
@@ -401,7 +401,7 @@ main fields are:
 | `winamp_window` | `false` | The window is the Winamp mini player |
 | `winamp_show_taskbar` | `true` | Windows since 0.8.0, and Linux X11 sessions: show the Winamp window's taskbar button; the main window always keeps its button. Wayland and macOS ignore it |
 | `custom_titlebar` | `true` | Windows and Linux: draw Resonix's own title bar and window buttons instead of the desktop's |
-| `skin` | `Spotifast Wide` | File or folder name in the skins folder, or `Spotifast Tall` or `Spotifast Wide`; blank uses the built-in Winamp skin |
+| `skin` | `Resonix Wide` | File or folder name in the skins folder, or `Resonix Tall` or `Resonix Wide`; blank uses the built-in Winamp skin |
 | `random_skin` | `false` | Since 0.11.0: pick a different skin (built-in or installed) each time the mini player opens; `skin` holds the one picked |
 | `skin_scale` | by display | Screen pixels per skin pixel, 1 to 4 |
 | `winamp_on_top` | `false` | Keep the mini player above other windows |
@@ -428,11 +428,11 @@ main fields are:
 | `keep_playing_in_background` | `true` | Close to tray |
 | `tray_icon` | `colour` | Linux and Windows: the tray icon in `colour`, or in `white` or `black` to match the panel or taskbar. macOS ignores it: the menu bar draws its icon black or white to match itself |
 | `mac_notch_widget` | `false` | Show interactive Now Playing widget when hovering over the MacBook notch (macOS only) |
-| `mac_show_in_dock` | `true` | macOS only: show Spotifast in the Dock and Cmd+Tab. `false` keeps it in the menu bar only; the menu-bar icon always stays |
+| `mac_show_in_dock` | `true` | macOS only: show Resonix in the Dock and Cmd+Tab. `false` keeps it in the menu bar only; the menu-bar icon always stays |
 | `check_for_updates` | `true` | Ask GitHub once a day for a newer release |
 | `update_automatically` | `true` | Download a newer release on the same major version in the background and install it at the next start. Replaces `download_updates_automatically` (off by default, downloads only), which is no longer read |
 | `newest_run` | none | The newest version that ran on this computer, so a person who went back to an older one is not updated past it on its own. Kept by the app, not a preference |
-| `web_client_id` | none | The Client ID you got by registering Spotifast, which it signs in with |
+| `web_client_id` | none | The Client ID you got by registering Resonix, which it signs in with |
 | `personal_app_nudge_at` | none | Legacy daily-reminder timestamp, retained for older releases |
 | `personal_app_intro_seen` | `false` | Whether the Premium personal-app introduction was dismissed or followed (available since 0.8.0) |
 | `slow_app_banner` | none | When the "Spotify is being slow" banner last appeared (`shown_at`) and how many times it was closed (`dismissals`; at 3 it stops). Kept by the app, not a preference |
@@ -444,7 +444,7 @@ main fields are:
 ## Command line
 
 ```
-spotifast [OPTIONS] [LINK]
+resonix [OPTIONS] [LINK]
 
   LINK                  A Spotify link to open: spotify:track:…, or an
                         open.spotify.com address
@@ -456,14 +456,14 @@ spotifast [OPTIONS] [LINK]
 `--start-hidden` is what **Start with your computer > In the tray** runs at
 login. Without the tray, or with **Keep music playing when the window closes**
 off, the window opens anyway. A link, or a restart after an update, opens the
-window too. When Spotifast is already running, it stays as it is.
+window too. When Resonix is already running, it stays as it is.
 
-A link goes to the running Spotifast when there is one, which then opens
+A link goes to the running Resonix when there is one, which then opens
 the page and brings its window forward; otherwise the app starts on it. The
 desktop's handler for `spotify:` links runs exactly this.
 
-Attach `spotifast.log` from the state directory to bug reports. It contains
-the last run's output, including extra lines from `spotifast -v`. After a
+Attach `resonix.log` from the state directory to bug reports. It contains
+the last run's output, including extra lines from `resonix -v`. After a
 crash, attach `panic.log` too.
 
 ## Demo mode
@@ -490,12 +490,12 @@ update badge for checking its layout. `update-aur`, `update-homebrew`,
 `update-appimage` open the update window of a copy that can't update itself,
 installed that way. `update-ready` opens it with a download ready to install,
 and `settings-updates` filters Settings down to **Update automatically**. `personal-app` shows the introduction to
-registering Spotifast for a listener on a shared grant, and `slow-banner` the
+registering Resonix for a listener on a shared grant, and `slow-banner` the
 banner suggesting it when Spotify slows the shared sign-in down. `audio-key-banner` shows the banner for a song
 whose audio key Spotify refused. `audio-outputs` opens the device picker with sample audio
-outputs to choose from, as Spotifast's own output lists them.
+outputs to choose from, as Resonix's own output lists them.
 `signed-out` and `connecting` show the sign-in card, with the steps for
-registering Spotifast, before and while the session connects;
+registering Resonix, before and while the session connects;
 `waiting-for-browser` shows it while the browser is open.
 `sign-in-returning` shows it for a listener with a Client ID saved,
 `sign-in-malformed` with one that cannot be a Client ID, and
@@ -547,7 +547,7 @@ directory; the ordinary demo does not scan your real themes folder.
 ## Home shelves
 
 Since 0.8.0, you can hide **Made for you** and **Recommended for you**
-from Home independently. Quit Spotifast before editing `settings.json`, then
+from Home independently. Quit Resonix before editing `settings.json`, then
 restart it. Add this field to hide both:
 
 ```json
@@ -568,16 +568,16 @@ songs for your account, which takes some listening, Home leaves the shelf out.
 
 ## Custom themes
 
-Since 0.11.0, Spotifast puts eight palettes in the `themes` folder beside
+Since 0.11.0, Resonix puts eight palettes in the `themes` folder beside
 `settings.json` the first time it starts: Catppuccin, Catppuccin Latte,
 Nord, Ristretto, Rose Pine, Rose Pine Dawn, Rose Pine Moon and Tokyo
 Night. They are ordinary palette files: read them to see how a theme is
-written, change them, or delete the ones you do not want. Spotifast never
+written, change them, or delete the ones you do not want. Resonix never
 rewrites them, and a deleted one stays deleted; `.installed-palettes` in
 the folder records which it has already put there.
 
 To make your own, add JSON files to the `themes` folder.
-Run `spotifast reload-themes` if the app is already open, then select it
+Run `resonix reload-themes` if the app is already open, then select it
 under **Settings → Appearance → Theme**, where it is listed by its filename
 without `.json`.
 The default is **Follow system**. It uses your desktop’s light/dark appearance,
@@ -592,10 +592,10 @@ Themes change colors and keep the app's existing fonts.
 
 While **Follow system** is selected, two more pickers appear below the Theme
 row: **Light mode theme** and **Dark mode theme**. Each starts with
-Spotifast's own **Light** or **Dark**, then lists the palettes whose `base`
+Resonix's own **Light** or **Dark**, then lists the palettes whose `base`
 matches: only light palettes for light mode and only dark ones for dark
 mode, because the base also decides whether the standard controls are drawn
-light or dark, and they follow the system. Spotifast then shows one or the
+light or dark, and they follow the system. Resonix then shows one or the
 other as your system switches between light and dark, while it stays open
 and without interrupting playback. Your choices are kept when you pick a
 single theme and come back when you choose Follow system again. On an
@@ -606,8 +606,8 @@ already follows your desktop theme, so the two pickers are not shown.
 needed and opens it in your file
 manager, using the same button style as the Winamp skins folder.
 After adding or editing a JSON file on macOS or Windows, run
-`spotifast reload-themes` to refresh the list and the selected palette without
-restarting playback. Since 0.10.2, Spotifast on Linux notices changes to the
+`resonix reload-themes` to refresh the list and the selected palette without
+restarting playback. Since 0.10.2, Resonix on Linux notices changes to the
 themes folder by itself.
 Choosing a built-in theme clears the custom selection.
 Since 0.11.0, whenever the colours change (a theme picked here, Omarchy
@@ -640,7 +640,7 @@ colour it: with **Colour from album art** off, or on a page without a cover.
 Its alpha is the strength, so `#00000018` is a faint dark wash and `#ffffff20`
 a faint light one. Leave it out for a plain page.
 
-Files are read in the background at launch and when `spotifast reload-themes`
+Files are read in the background at launch and when `resonix reload-themes`
 is called. The command updates the selected palette without interrupting
 playback, changing your selection or showing the window. It does not start a
 stopped app. Repeated requests are combined while a scan is running. On Linux,
@@ -650,7 +650,7 @@ subdirectories. Each file is limited to 64 KiB. Keep at most 128 JSON files and
 512 total entries in the themes folder; the saved selection is still checked
 when a folder exceeds these limits.
 
-Invalid files are skipped with a warning in the log. Spotifast remembers the
+Invalid files are skipped with a warning in the log. Resonix remembers the
 last accepted custom palette in `settings.json`. If the selected file is
 removed or becomes invalid, that appearance stays in place, including after
 a restart, and the Theme row explains the problem. The same holds for the
@@ -678,7 +678,7 @@ and track later theme changes. An existing explicit Dark, Light or custom
 choice stays selected. Choose **Follow system** or **Omarchy** under
 **Settings → Appearance → Theme** to follow Omarchy instead.
 
-Since 0.10.2, portable archives and Cargo builds follow Omarchy too: Spotifast
+Since 0.10.2, portable archives and Cargo builds follow Omarchy too: Resonix
 reads the palette Omarchy rendered for it, or renders the template itself from
 the current theme's colours, and picks up theme changes without the hook.
 
@@ -701,40 +701,40 @@ or hook. A package uninstall removes the shared integration assets; your user
 configuration remains, like the rest of your preferences.
 
 For a manual installation, the repository includes an
-[Omarchy template](https://github.com/crmne/spotifast/blob/main/contrib/omarchy/spotifast.json.tpl)
-and a [theme-change hook](https://github.com/crmne/spotifast/blob/main/contrib/omarchy/spotifast-theme).
+[Omarchy template](https://github.com/ItsARCn/Resonix/blob/main/contrib/omarchy/resonix.json.tpl)
+and a [theme-change hook](https://github.com/ItsARCn/Resonix/blob/main/contrib/omarchy/resonix-theme).
 Omarchy resolves its light/dark mode and colors through its
 [template system](https://omarchy.org/manual/making-your-own-theme/).
 The hook copies the result atomically into `themes/omarchy.json`, then asks a
-running Spotifast to reload it. It does not change your desktop theme or your
-Spotifast selection itself.
+running Resonix to reload it. It does not change your desktop theme or your
+Resonix selection itself.
 
 For portable or Cargo installations, install the two files from a checkout:
 
 ```sh
 mkdir -p ~/.config/omarchy/themed
-install -m 644 contrib/omarchy/spotifast.json.tpl ~/.config/omarchy/themed/
-omarchy hook install theme-set contrib/omarchy/spotifast-theme
+install -m 644 contrib/omarchy/resonix.json.tpl ~/.config/omarchy/themed/
+omarchy hook install theme-set contrib/omarchy/resonix-theme
 ```
 
 Apply a theme through Omarchy's theme picker, then select **Omarchy** in
-Spotifast's **Settings → Appearance → Theme** once. Later Omarchy changes update
+Resonix's **Settings → Appearance → Theme** once. Later Omarchy changes update
 that palette while music keeps playing. Turn off album-art tinting if every
 page should keep the theme's fixed colors.
 
 The hook uses Omarchy's current theme at
-`~/.local/state/omarchy/current/theme` and Spotifast's existing
-`${XDG_CONFIG_HOME:-~/.config}/spotifast/themes` directory. The shipped hook
+`~/.local/state/omarchy/current/theme` and Resonix's existing
+`${XDG_CONFIG_HOME:-~/.config}/resonix/themes` directory. The shipped hook
 is updated automatically if its contents have not been customized. A custom profile can set
-`SPOTIFAST_THEMES_DIR` in the installed hook; this example uses the native
-`spotifast` command, not a Flatpak launcher. Themes without `colors.toml` need
-their own `spotifast.json` file. Missing or invalid palettes leave the last
+`RESONIX_THEMES_DIR` in the installed hook; this example uses the native
+`resonix` command, not a Flatpak launcher. Themes without `colors.toml` need
+their own `resonix.json` file. Missing or invalid palettes leave the last
 accepted appearance in place.
 
-To stop following Omarchy, choose Dark, Light or another custom theme in Spotifast.
+To stop following Omarchy, choose Dark, Light or another custom theme in Resonix.
 For a manual installation, remove only
-`~/.config/omarchy/hooks/theme-set.d/spotifast-theme` and
-`~/.config/omarchy/themed/spotifast.json.tpl`. Other hooks remain in place.
+`~/.config/omarchy/hooks/theme-set.d/resonix-theme` and
+`~/.config/omarchy/themed/resonix.json.tpl`. Other hooks remain in place.
 Packaged launches recreate missing integration files. To disable the hook
 while keeping the package installed, leave that hook file empty instead;
 existing user files are preserved. Selecting Dark or Light is sufficient to stop following Omarchy's colors.

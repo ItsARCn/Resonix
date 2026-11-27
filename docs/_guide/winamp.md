@@ -27,7 +27,7 @@ Choose **Random**, first in that list, to get a different skin each time you
 switch to the mini player, never the same one twice in a row. Settings says
 which skin it picked, and choosing a skin yourself turns Random off.
 
-You can also use an unpacked skin folder. Spotifast finds skin files inside
+You can also use an unpacked skin folder. Resonix finds skin files inside
 its subfolders, up to eight folders deep, so you do not need to move them all
 into one folder.
 
@@ -35,7 +35,7 @@ Right-click the title bar, or click **O**, to choose a size from 1x to 4x.
 Each size keeps the classic pixels sharp. The same menu can keep the player
 above other windows. **D** steps through the sizes, 1x to 4x, and **A**
 toggles always-on-top.
-Spotifast remembers the window position where your desktop allows it.
+Resonix remembers the window position where your desktop allows it.
 
 Skins can have transparent areas and shapes other than rectangles. Modern
 Winamp 3 and 5 skin formats are not supported; choose classic Winamp 2 skins.
@@ -63,14 +63,14 @@ with a Winamp skin, and pick it in Settings. The Internet Archive's
 [Windows Media Player Skins Collection](https://archive.org/details/windowsmediaplayerskinscollection)
 has over 170 of them.
 
-Spotifast comes with two of its own, listed first under Windows Media Player
-in Settings. **Spotifast Tall** is small enough to keep at the side of your screen: a white
+Resonix comes with two of its own, listed first under Windows Media Player
+in Settings. **Resonix Tall** is small enough to keep at the side of your screen: a white
 ceramic ribbon round a smoked-glass core. It opens with a thread of green light
 tracing its outline, and that light burns under the arch while the music plays.
 Click the square, or the small button below it, to switch between the album art
 and the visualizer. The dots at the top of the glass change its page, from Now
 Playing to the equalizer to the queue, where a click plays a song. It remembers
-what you chose. **Spotifast Wide**, listed after it, is the same object laid on
+what you chose. **Resonix Wide**, listed after it, is the same object laid on
 its side, with the ribbon arching over the right of a long glass core, for the
 top or bottom of a screen. It works the same way and remembers its own choices.
 
@@ -83,14 +83,14 @@ A skin's preferences, such as which panels were open, are kept for next time.
 The picture on a skin's card comes from running it the same way, with a song
 partway through and still bars in place of the visualisation.
 
-Skins work with what Spotifast has:
+Skins work with what Resonix has:
 
 - **Playback** controls, seek, volume, mute, shuffle and repeat are real. Fast
   forward and rewind jump ten seconds, and Stop pauses and rewinds.
 - **Playlist** panels show the playing song and the queue. Double-click a row
   to play it.
-- **Equalizer** panels change Spotifast's equalizer, and balance changes the
-  balance. Moving a band turns the equalizer on. Skins with settings Spotifast
+- **Equalizer** panels change Resonix's equalizer, and balance changes the
+  balance. Moving a band turns the equalizer on. Skins with settings Resonix
   has no match for, such as SRS WOW or crossfade, show them without effect.
 - **Visualisation** areas show MilkDrop, moving and scaling with the skin. A
   skin's next and previous visualisation buttons change the preset. Until the
@@ -100,12 +100,12 @@ Skins work with what Spotifast has:
   the volume. Open MilkDrop once to download its presets.
 - **Video** areas show the song's cover. Spotify audio has no video, so a skin
   that waits for video to open its video view does not open it.
-- **File, CD, library and web** buttons do nothing: a skin plays what Spotifast
+- **File, CD, library and web** buttons do nothing: a skin plays what Resonix
   plays, and it cannot open files or web pages.
 
 Sounds a skin plays for itself are not played. A few skins use pictures or
 text built into Windows Media Player; those parts stay blank. Many skins have
-bugs in their own scripts that Windows Media Player ignored, and Spotifast
+bugs in their own scripts that Windows Media Player ignored, and Resonix
 ignores them as well.
 
 A Windows Media Player skin is drawn at one pixel per screen pixel unless you

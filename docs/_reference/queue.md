@@ -76,7 +76,7 @@ not consume a queue row or restore an older queue saved on this computer.
    rows below it.
 
    Spotify pads a short queue by going round it again, back to the playing
-   song, even with Repeat off. With Repeat off, Spotifast leaves out the
+   song, even with Repeat off. With Repeat off, Resonix leaves out the
    rows from where the list comes back round, so a song started on its own,
    as a Recent row starts it, is not listed again under itself. Near the end
    of an album, Spotify may go round to the album's first song without
@@ -92,7 +92,7 @@ not consume a queue row or restore an older queue saved on this computer.
    leaves the current song playing and keeps repeated songs as separate
    entries. Right-click a song or selection to find it beside **Add to queue**.
    It is enabled only while this computer is the active player, including
-   when paused. Spotify does not let Spotifast insert at the front of another
+   when paused. Spotify does not let Resonix insert at the front of another
    device's queue.
 
    A local file from a playlist queues like any other song, but only while
@@ -110,7 +110,7 @@ not consume a queue row or restore an older queue saved on this computer.
    changing playback devices asks you to add it again on the new device.
 
    On another device, a rate limit delays additions instead of dropping them.
-   Spotifast retries automatically after Spotify's requested wait and keeps
+   Resonix retries automatically after Spotify's requested wait and keeps
    later songs behind the album. Pending rows retain their known titles and
    durations. If Spotify permanently rejects an addition, only the rejected
    song and any unsent remainder of its album disappear; accepted songs stay.
@@ -144,12 +144,12 @@ not consume a queue row or restore an older queue saved on this computer.
    below stay. It only shows while this computer is the player, because
    that is the only queue the app can actually clear.
 
-8. **Changes appear immediately.** Spotifast updates the queue before Spotify
+8. **Changes appear immediately.** Resonix updates the queue before Spotify
    confirms the change. For local playback, it updates its own player directly.
    Toggling shuffle rechecks the queue so the new playback order appears
    promptly without waiting for the song to finish.
 
-9. **Closing the app keeps the queue.** Spotifast saves it locally. When you
+9. **Closing the app keeps the queue.** Resonix saves it locally. When you
    resume the last song, it restores your queued songs and playlist position,
    and the playlist carries on after that song, even when it was paused or
    playing from a sorted view when you closed the app.
@@ -159,7 +159,7 @@ not consume a queue row or restore an older queue saved on this computer.
    songs and, with Autoplay on, Spotify's recommendations for that song.
 
 10. **Old answers from Spotify are ignored.** Queue responses can be a few
-    seconds late. Spotifast ignores stale responses and asks again. Your
+    seconds late. Resonix ignores stale responses and asks again. Your
     changes stay visible while it waits for confirmation.
 
 Since 0.8.0, selecting several playlist rows and choosing
@@ -176,7 +176,7 @@ counts once, and the notification reports only the rows actually added.
     *Playing next* elsewhere in the same section moves it, only while this
     computer is the active player. Otherwise every drop still just adds to
     the end, exactly like **Add to queue**. *Next up* is never a drop
-    target: it plays from the current context, not from a list Spotifast
+    target: it plays from the current context, not from a list Resonix
     can rewrite. While *Playing next* is empty, drop the song on the player
     bar's Queue button instead.
 

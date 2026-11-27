@@ -1,7 +1,7 @@
 ---
 redirect_from: /using-fastpotify/
 title: Everyday Use
-description: Play music, arrange playlists, find lyrics, and make Spotifast your own.
+description: Play music, arrange playlists, find lyrics, and make Resonix your own.
 nav_order: 3
 ---
 
@@ -41,7 +41,7 @@ unavailable, the session read fails, or the grant check fails, the same shelf
 shows approximate matches found through a Web API playlist search, which can
 be rate-limited. If a refresh fails, cards already on screen remain available;
 **Retry** is shown when the first load fails. Spotify DJ is left out because
-Spotifast cannot play its special context.
+Resonix cannot play its special context.
 
 **Your top mixes** follows Made for you with the artist, genre and decade
 mixes Spotify builds from your listening, in Spotify's order. It comes from
@@ -120,7 +120,7 @@ is still loading, it selects the songs loaded so far.
 `Ctrl+C` (`Cmd+C`) copies the selected songs' `open.spotify.com` links, one
 per line, ready to paste into another playlist, a message, or Spotify's own
 apps. `Ctrl+V` (`Cmd+V`) in a playlist you can edit adds every song link on
-the clipboard to its end. Links copied from Spotifast add their rows at
+the clipboard to its end. Links copied from Resonix add their rows at
 once; links from elsewhere appear as soon as Spotify names the songs. Songs
 already in the playlist ask before being added twice, and links that are
 not songs, such as albums, are skipped.
@@ -210,13 +210,13 @@ those, hovering will just show the year.
 Since 0.8.0, choose **Refresh** in a playlist's **…** menu to reload
 its details and songs, including changes made in another Spotify client. The
 menu item reads **Refreshing…** and is disabled while loading. Current songs,
-filtering and sorting stay visible. Spotifast finishes saving your edits before
+filtering and sorting stay visible. Resonix finishes saving your edits before
 loading changes from Spotify. If loading fails, your songs stay visible and
 you can choose **Retry**.
 
 A podcast's **…** menu has the same **Refresh**. It asks Spotify for the
 podcast again instead of reusing the episodes loaded earlier, so new
-episodes appear without restarting Spotifast. The episodes already shown
+episodes appear without restarting Resonix. The episodes already shown
 stay until the new list arrives.
 
 ## Playing from the sidebar
@@ -236,7 +236,7 @@ not queued after it.
 
 Paste a link to a song, album, artist, playlist or podcast into the search box
 and press `Enter` to open it. A link to a song opens its album with the song
-selected and in view. Spotifast does not start playing it.
+selected and in view. Resonix does not start playing it.
 
 ## Search from a launcher
 
@@ -245,14 +245,14 @@ and fills the box without starting playback. To try it in a development build,
 set a launcher or keyboard shortcut to run:
 
 ```sh
-spotifast 'https://open.spotify.com/search/here%20comes%20the%20sun'
+resonix 'https://open.spotify.com/search/here%20comes%20the%20sun'
 ```
 
 This starts the app if needed or opens its existing window. When signed out,
 the latest search link waits for sign-in. Use `https://open.spotify.com/search`
 without a query to open an empty, focused search box.
 
-On Linux, `playerctl --player=spotifast open` accepts the same search link
+On Linux, `playerctl --player=resonix open` accepts the same search link
 when the app is running. Links to songs, albums, and playlists still start
 playback as before.
 
@@ -288,7 +288,7 @@ this playlist**. On macOS, both `Delete` and `Fn+Delete` work. Text fields,
 dialogs and open menus keep Delete from acting on the list.
 
 Press and hold the player bar's volume slider to update local volume without
-moving the pointer. Spotifast's own Soloist follows a drag as you go; other
+moving the pointer. Resonix's own Soloist follows a drag as you go; other
 remote volume is sent on release. Both keep your chosen
 level while Spotify updates, including during rate limits. Fresh updates
 can confirm the level or show a change made on another device. Some speakers,
@@ -309,7 +309,7 @@ when a song row or control has focus. Text fields keep Space for typing.
 Unmodified letter shortcuts still yield to the focused control.
 
 This is the first part of screen-reader support. Windows testing with NVDA
-remains tracked in [#262](https://github.com/crmne/spotifast/issues/262).
+remains tracked in [#262](https://github.com/ItsARCn/Resonix/issues/262).
 Winamp skins do not yet have equivalent accessibility coverage.
 
 ## Keyboard shortcuts
@@ -355,21 +355,21 @@ restarts the song keeps it repeating.
 
 ## Controlling it from the command line
 
-The `spotifast` command controls the copy already running, on every
+The `resonix` command controls the copy already running, on every
 platform. Each verb prints nothing on success:
 
 ```
-spotifast play-pause          spotifast volume 40
-spotifast play                spotifast volume-up [percent]
-spotifast pause               spotifast volume-down [percent]
-spotifast next                spotifast mute
-spotifast previous            spotifast shuffle [on|off]
-spotifast seek 15             spotifast repeat [off|context|track]
-spotifast seek -- -15         spotifast like
-spotifast seek-to 90          spotifast play-uri spotify:playlist:37i9…
-spotifast show                spotifast transfer <device-id>
-spotifast now-playing [--raw] spotifast devices [--raw]
-spotifast play-search <words> spotifast play-search --kind artist <name>
+resonix play-pause          resonix volume 40
+resonix play                resonix volume-up [percent]
+resonix pause               resonix volume-down [percent]
+resonix next                resonix mute
+resonix previous            resonix shuffle [on|off]
+resonix seek 15             resonix repeat [off|context|track]
+resonix seek -- -15         resonix like
+resonix seek-to 90          resonix play-uri spotify:playlist:37i9…
+resonix show                resonix transfer <device-id>
+resonix now-playing [--raw] resonix devices [--raw]
+resonix play-search <words> resonix play-search --kind artist <name>
 ```
 
 `shuffle` and `repeat` toggle when used without an argument. Pass a state to
@@ -388,33 +388,33 @@ loading. New fields are appended to keep older scripts working.
 marked with `*`. `--raw` prints JSON. The command refreshes the device list,
 so the first call after startup may be empty. Run it again if needed.
 
-A verb exits non-zero when Spotifast is not running.
+A verb exits non-zero when Resonix is not running.
 
-`spotifast <link>` opens a Spotify link, a `spotify:` URI or an
+`resonix <link>` opens a Spotify link, a `spotify:` URI or an
 `open.spotify.com` address, in the running app, or starts the app on it.
-This is what the desktop runs when a link is clicked. On Linux, Spotifast is
-also an MPRIS player, so `playerctl --player=spotifast play-pause` and media
+This is what the desktop runs when a link is clicked. On Linux, Resonix is
+also an MPRIS player, so `playerctl --player=resonix play-pause` and media
 keys work too.
 
 Launchers such as Raycast or Alfred, and the Stream Deck plugin, can use
-these commands. They reach Spotifast through a private channel only your user
+these commands. They reach Resonix through a private channel only your user
 can open (on Windows, a loopback port that answers only requests carrying a
 random token). Use the command rather than the channel itself.
 
 ## Updates
 
 The Windows installer, Mac app, AppImage, and portable Windows and Linux
-downloads update themselves. When Spotifast finds a new release, it
+downloads update themselves. When Resonix finds a new release, it
 downloads it in the background (not on a metered connection or without
 internet) and the green button at the top reads **Update ready**. Click it
 and choose **Restart to update** to install it now; otherwise it installs
-the next time Spotifast starts, before its window opens, and the new
+the next time Resonix starts, before its window opens, and the new
 version opens in its place. Nothing restarts while you listen.
 
 Turn **Update automatically** off under **Settings > Updates** to decide each time: the green
 update button then downloads a release when you click it. A new major
 version always asks first. So does going back: if you install an older
-version than one you ran before, Spotifast still shows the newer releases
+version than one you ran before, Resonix still shows the newer releases
 but installs none of them on its own until one newer than the version you
 left comes out. Closing the update window keeps a download running. You can
 also check for a new release from Settings, or on macOS from the
@@ -422,23 +422,23 @@ application menu.
 **Release notes** in **Settings > About** opens the GitHub release page of
 the version you are running, to read what changed.
 
-Spotifast checks each download before installing it. An interrupted or damaged
+Resonix checks each download before installing it. An interrupted or damaged
 download leaves the running app alone, and a failed startup restores the
 previous installation. Updates keep your settings and sign-ins. On macOS,
-move Spotifast to Applications before updating it.
+move Resonix to Applications before updating it.
 
 Package-managed installations update through their package manager,
 including Homebrew, Flatpak, apt, dnf, pacman, Nix, and Cargo. They still
-show the green update button when a new release is out, once Spotifast has
+show the green update button when a new release is out, once Resonix has
 checked the release's signature. Its window says how this copy was
 installed and shows the command that updates it, with a **Copy** button;
-Spotifast never runs it for you:
+Resonix never runs it for you:
 
 | Installed from | Command shown |
 | --- | --- |
-| AUR | `yay -Syu` (or `paru -Syu`) with the package you installed, such as `spotifast-bin` |
-| Homebrew | `brew upgrade --cask spotifast` |
-| Fedora COPR | `sudo dnf upgrade --refresh spotifast` |
+| AUR | `yay -Syu` (or `paru -Syu`) with the package you installed, such as `resonix-bin` |
+| Homebrew | `brew upgrade --cask resonix` |
+| Fedora COPR | `sudo dnf upgrade --refresh resonix` |
 | The release's RPM package | `sudo dnf install` with the new package's address |
 | The release's DEB package | `sudo apt install` with the new package, after **Download from GitHub** |
 | The release's Flatpak | `flatpak install --user` with the new bundle, after **Download from GitHub** |
@@ -447,8 +447,8 @@ Spotifast never runs it for you:
 
 On NixOS or with Home Manager, update it the way you installed it. Other
 installations use the [Download page](/download/). Portable archives
-identify themselves with `spotifast-portable.txt`. On Windows, a portable
-copy keeps its settings, state and caches in the `spotifast-data` folder
+identify themselves with `resonix-portable.txt`. On Windows, a portable
+copy keeps its settings, state and caches in the `resonix-data` folder
 next to it, which updates leave as it is (see
 [portable copies](/settings-and-files/#portable-copies)). The AppImage
 updates itself when you own it and can write to its folder, such as
@@ -482,12 +482,12 @@ beside them. A search still lists matching playlists flat.
 
 **Spotify custom order** follows your playlist order and folders from Spotify.
 Set up playback on this computer to load that order. Your playlists stay
-visible while it loads, and Spotifast remembers the last order for your account.
-When you rearrange your library in another Spotify app, Spotifast picks up the
+visible while it loads, and Resonix remembers the last order for your account.
+When you rearrange your library in another Spotify app, Resonix picks up the
 new order when you switch back to it.
-Items you pin in Spotifast remain at the top, including items from a closed
+Items you pin in Resonix remain at the top, including items from a closed
 folder. Sorting or dragging Library items changes their order only in
-Spotifast; it does not rearrange your Spotify library.
+Resonix; it does not rearrange your Spotify library.
 
 Drag playlists to choose **Local custom order**. New playlists appear below the
 pinned group. Selecting **Name**, **Recently played** or **Spotify custom order**
@@ -504,7 +504,7 @@ Liked Songs starts pinned at the top. Drag it between pins to choose its
 position, or below the pin block to unpin it and put it in **Local custom
 order**. Other pins can sit above it. Its right-click menu also offers **Unpin**
 and **Pin to top**; pinning adds it after your existing pins. The arrangement
-survives restarting Spotifast and switching sort choices.
+survives restarting Resonix and switching sort choices.
 
 When unpinned, Liked Songs follows **Name** or **Recently played** like the other
 rows. In **Spotify custom order**, it appears after the playlists because it
@@ -524,14 +524,14 @@ bar's empty space switches it, as Winamp's visualizer did: off, then
 Spectrum, then Waveform, then off again. **Frame rate** in **Settings >
 Appearance** sets how often it and the mini player's analyser draw: 30, 60
 (the default), the rate of the screen showing the window, or Uncapped,
-which follows the display. They draw at half that rate while Spotifast's
+which follows the display. They draw at half that rate while Resonix's
 window is out of focus, at most 30 frames a second while the system saves
 energy, and not at all while nobody can see the window: minimised, in the
 tray, with the display off or the screen locked. MilkDrop has its own frame
 rate. Disable **Click player bar to change
 visualizer** in **Settings > Appearance** to prevent accidental changes.
 
-Spotifast follows the system when it asks for less motion: **Animation
+Resonix follows the system when it asks for less motion: **Animation
 effects** turned off in Windows, **Reduce motion** on macOS, or GNOME's
 **Animations** turned off. Its animations then show where they end at once:
 the player bar's colour changes without fading, lyrics jump to the sung line,
@@ -544,12 +544,12 @@ bullet; each artist name remains a separate link.
 ## Starting with your computer
 
 **Settings > Playback on this computer > Start with your computer** opens
-Spotifast when you log in. **With the window** opens it as you would;
+Resonix when you log in. **With the window** opens it as you would;
 **In the tray** starts it without a window, ready for media keys and the tray
 icon; on macOS it reads **In the menu bar**. **Off** leaves your login alone.
 
 The setting is your system's own list of what starts at login, read back each
-time Settings opens, so turning Spotifast off there (System Settings on macOS,
+time Settings opens, so turning Resonix off there (System Settings on macOS,
 Task Manager's Startup apps on Windows, your desktop's autostart settings on
 Linux) shows here too.
 
@@ -561,20 +561,20 @@ Linux) shows here too.
   Items** when it holds the item for approval; the row says so until then.
   It needs macOS 13 or later and the app from the disk image or Homebrew.
 - **Flatpak** asks the desktop's background portal, which may ask you first.
-  A change made later in the desktop's own settings is not seen by Spotifast.
-- If Spotifast is already running when the login entry runs, nothing happens:
+  A change made later in the desktop's own settings is not seen by Resonix.
+- If Resonix is already running when the login entry runs, nothing happens:
   it stays where it is.
 
 ## Windows taskbar controls
 
-Since 0.8.0, hovering Spotifast's taskbar button offers **Previous**,
+Since 0.8.0, hovering Resonix's taskbar button offers **Previous**,
 **Play/Pause**, and **Next** beneath its window preview. They control the same
 playing device as the player bar, update immediately, and are disabled when
 there is no song or the device refuses controls. The icons follow the system
 appearance and display scaling.
 
 Since 0.8.0, clicking or double-clicking the Windows tray icon shows
-and raises Spotifast. Use **Show or hide Spotifast** in the tray menu to hide
+and raises Resonix. Use **Show or hide Resonix** in the tray menu to hide
 it again.
 
 Closing to the tray removes the window and its preview. Reopening the main
@@ -585,7 +585,7 @@ is closed.
 For the Winamp mini player, turn off **Show in taskbar** under
 **Settings > Mini player**, or **Show in taskbar** in its options menu.
 The choice survives restarts. The mini player stays visible; the tray icon,
-**Ctrl+M**, the skin logo, and launching Spotifast again remain ways to reach
+**Ctrl+M**, the skin logo, and launching Resonix again remain ways to reach
 the app. Returning to the main window always restores its taskbar button.
 Changing the option while the mini player is open replaces that window while
 playback continues. This setting is available on Windows and in Linux X11
@@ -603,16 +603,16 @@ position left on an unplugged display.
 
 ## macOS menu bar and Dock menu
 
-Click Spotifast's menu-bar icon to open its menu. From there you can show or
-hide the window, control playback, or quit Spotifast. The menu opens from
+Click Resonix's menu-bar icon to open its menu. From there you can show or
+hide the window, control playback, or quit Resonix. The menu opens from
 either a primary or secondary click, as other macOS menu-bar items do.
 It stays available with the main window open, with the Winamp mini player,
 and after closing the window to the menu bar.
 
-Spotifast also shows its Dock icon when run directly through Cargo, without
+Resonix also shows its Dock icon when run directly through Cargo, without
 an installed app bundle.
 
-Right-click or Control-click Spotifast's Dock icon for **Play** (or **Pause**
+Right-click or Control-click Resonix's Dock icon for **Play** (or **Pause**
 while music plays), **Next**, and **Previous**, above the standard Dock items.
 They control the same playing device as the player bar and keep working while
 the window is closed to the menu bar.
@@ -620,16 +620,16 @@ the window is closed to the menu bar.
 ### Menu bar only
 
 Turn off **Show in Dock** under **Settings > Playback on this computer** to
-run Spotifast from the menu bar alone. The Dock icon goes at once, without a
-restart, and the window stays open in front. Spotifast then also leaves the
+run Resonix from the menu bar alone. The Dock icon goes at once, without a
+restart, and the window stays open in front. Resonix then also leaves the
 Cmd+Tab switcher and shows no menu bar of its own while you use it, as other
 menu-bar apps do. Its keyboard shortcuts, including Cmd+Q, Cmd+comma and
 copy and paste, keep working in the window.
 
 The menu-bar icon stays: it is how you show the window again after closing
-it, and how you quit while the window is closed. Opening Spotifast again from
+it, and how you quit while the window is closed. Opening Resonix again from
 Finder or Launchpad also brings the window back. Turn the setting on to put
-Spotifast back in the Dock. The choice survives restarts, and Spotifast
+Resonix back in the Dock. The choice survives restarts, and Resonix
 starts without the Dock icon; the Dock may show it for a moment as the app
 launches. This option is only on macOS.
 
@@ -641,7 +641,7 @@ others.
 Use your desktop's window rule or shortcut instead. In KDE Plasma, configure
 **Keep Window Above Others** under **Settings > Keyboard > Shortcuts >
 Window Management**. Your saved preference remains available when you use
-Spotifast on Windows, macOS, or X11 again.
+Resonix on Windows, macOS, or X11 again.
 
 Since 0.8.0, the top bar reserves room for the device and update
 badges beside Search. In narrow windows those badges show only their icons.
@@ -655,7 +655,7 @@ picker or update window.
 
 ## MacBook notch widget
 
-On macOS machines equipped with a display notch, Spotifast displays an
+On macOS machines equipped with a display notch, Resonix displays an
 interactive Now Playing floating island under the notch when the main
 window is minimized, in the background, or closed to the tray.
 
@@ -680,7 +680,7 @@ radio has no page, so its name is plain text.
 ## Recent
 
 The queue panel's second tab combines Spotify's history with tracks played
-through Spotifast, which Spotify does not record.
+through Resonix, which Spotify does not record.
 
 Since 0.8.0, choosing any Recent row starts that song on its own,
 and the player bar shows the selection immediately while playback starts.
@@ -697,7 +697,7 @@ The local list is stored in `history.json` and is never uploaded. Settings →
 Storage shows its location and has a **Clear history** button.
 
 On Windows, the main window's minimize, maximize, and close buttons share the
-top bar with Spotifast's controls. Drag an empty part of that bar to move or
+top bar with Resonix's controls. Drag an empty part of that bar to move or
 snap the window, and drag a window edge or corner to resize it.
 
 ## When Spotify won't play a song here {#audio-key}
@@ -718,17 +718,17 @@ in `settings.json`, by the device's own id, so it survives renames and
 reordering. While a saved output is unplugged, music plays through the system
 default, and the output stays listed so you can see and change the choice.
 
-On Linux, Spotifast plays through PipeWire when it is running, otherwise
+On Linux, Resonix plays through PipeWire when it is running, otherwise
 through a PulseAudio server, and otherwise straight to ALSA. The picker lists
-that sound system's outputs. Spotifast 0.13.3 and earlier saved an output by
+that sound system's outputs. Resonix 0.13.3 and earlier saved an output by
 its name: a name an output still has is kept, and saved by its id the next
 time music plays there. One that no output has any more, such as ALSA's
 **PipeWire Sound Server**, plays through the system default until you choose
 again.
 
-Volume mixers show the stream as **Spotifast**, with its icon, playing
+Volume mixers show the stream as **Resonix**, with its icon, playing
 **Spotify playback**, on PipeWire and PulseAudio. The mixer remembers its
-volume for Spotifast alone.
+volume for Resonix alone.
 
 ## Listening activity
 
@@ -749,7 +749,7 @@ controls keep their room; widen the window to bring it back.
 
 ## Sleep while playing
 
-While music plays on this computer, Spotifast keeps it from going to sleep
+While music plays on this computer, Resonix keeps it from going to sleep
 on its own, so a long playlist is not cut off by the idle timer. The display
 still turns off and the screen still locks as usual, and you can still put
 the computer to sleep yourself or close the lid. Pausing or stopping, or
@@ -760,11 +760,11 @@ depends on the desktop honouring the request; GNOME and KDE do.
 ## Google Cast playback
 
 Google Cast speakers and speaker groups appear in the device picker. Enable
-local playback first, then select the speaker. Since 0.13.1, Spotifast first
+local playback first, then select the speaker. Since 0.13.1, Resonix first
 checks that the speaker is a genuine Google Cast device, as Chrome does (0.13.0
 did not), then starts Spotify on
 it, and the speaker plays like any other Spotify Connect device. A device that
-fails the check gets nothing, and Spotifast says it could not prove it is
+fails the check gets nothing, and Resonix says it could not prove it is
 genuine.
 
 ## Radio
@@ -819,13 +819,13 @@ Visiting the artist never pre-saves an album. Refresh the artist
 page to check for a newly announced release; cards disappear after release time.
 
 Open a `spotify:prerelease:` URI or an `open.spotify.com/prerelease/` link
-with Spotifast to see the artwork, release countdown and track-list preview.
+with Resonix to see the artwork, release countdown and track-list preview.
 This requires local playback authorization. Pre-save adds the resolved album
 to your Spotify library and confirms its saved state. Unavailable preview
 tracks cannot start playback.
 
 The browser's **Open in app** action uses the registered `spotify:` handler.
-Pasting an HTTPS address into the browser opens Spotify's website; Spotifast
+Pasting an HTTPS address into the browser opens Spotify's website; Resonix
 does not take over HTTP or HTTPS associations.
 
 ## Playlist covers
@@ -863,7 +863,7 @@ the middle of the screen.
 
 Press **V** in full screen lyrics, or click anywhere that isn't a line of
 lyrics or a control, to put MilkDrop behind the words instead of the cover's
-art, and do the same again to bring the art back; Spotifast remembers which you
+art, and do the same again to bring the art back; Resonix remembers which you
 chose. **N** and **P** change the preset there. The picture is dimmed as far as
 it takes to keep the words clear, and holds still while the music is paused.
 It uses the presets you have: with none, the art stays. It follows the sound

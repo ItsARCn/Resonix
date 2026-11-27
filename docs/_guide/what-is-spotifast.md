@@ -1,104 +1,19 @@
 ---
-redirect_from:
-  - /what-is-fastpotify/
-  - /renaming/
-seo:
-  title: "What is Spotifast? An Open-Source Spotify Client"
-title: What is Spotifast?
-description: What Spotifast offers, what you need to use it, and its current limits.
-nav_order: 0
+title: What is Resonix?
+description: A native Rust desktop YouTube Music client built on Spotifast's egui interface and Sunder's YouTube backend.
+nav_order: 1
+permalink: /what-is-spotifast/
 ---
 
-## Why Spotifast
+Resonix is a fast, lightweight native music player for Linux, macOS, and Windows written in Rust — with no browser engine and no Electron.
 
-**Spotify, native and fast.** Spotifast is a lightweight Spotify app for
-Linux, macOS, and Windows. It opens in well under a second and typically uses
-100–250 MB of memory, while Spotify's desktop app often uses 600 MB to over 1 GB.
+## Two open-source foundations
 
-Your Spotify playlists stay on your account.
+- **[Spotifast](https://github.com/crmne/spotifast)** (Carmine Paolino, MIT) provides the pure `egui` + `fastframe` UI, Winamp `.wsz` and WMP `.wmz` skin engine, MilkDrop `libprojectM` visualizer, 10-band equalizer, LRCLIB lyrics view, custom theme / Omarchy support, and desktop tray/MPRIS integration.
+- **[Sunder](https://github.com/FrogSnot/Sunder)** (AGPL-3.0) provides the YouTube & YouTube Music dual-source search, `yt-dlp` stream extraction, offline download manager, and local SQLite persistence.
 
-**Playback needs Spotify Premium.** Free accounts can browse and search, but
-cannot play music through Spotifast on this computer or another device.
+## Why Resonix?
 
-![Spotifast Home with the playlist library, recommendations, queue, and player visible](/screenshot.png)
-
-## What it does
-
-- **Plays music on this computer.** Spotifast appears as a Spotify Connect
-  device. Select it from your phone or play music in the app. Playback has
-  no added gaps between songs and supports up to 320 kbps. Optional settings
-  keep songs at a similar loudness and reduce repeat downloads by keeping
-  recently played audio.
-- **Controls other devices.** Move playback to a speaker, a phone, or
-  another computer from the device picker, and keep controlling it: play,
-  pause, skip, seek, shuffle, repeat, volume. The picker expands upward to
-  show several devices at once, fitting the window; longer lists scroll.
-- **Library.** Browse playlists, Liked Songs, saved albums, followed artists,
-  podcasts, and saved episodes. Create, edit, and reorder your playlists.
-- **Search** across songs, artists, albums, playlists, podcasts, and
-  episodes, with artist pages, discographies, and related artists. When Spotify
-  provides an artist profile, select its name on a song, including the top
-  result, to open that page.
-- **Background playback.** Closing the window keeps the music playing from
-  the system tray. Use your keyboard's media keys to play, pause, and skip.
-- **Themes.** Choose light, dark, or your own colours. On Omarchy, Spotifast
-  can follow your desktop theme automatically. Pages can also take a colour
-  from album art.
-
-<a id="account-safety"></a>
-
-## Is it safe for my Spotify account?
-
-[Soloist](/soloist/) is Spotify's official player for third-party apps, so
-with Soloist you're listening the way Spotify provides for.
-
-Spotifast never receives your Spotify password: you sign in on Spotify's own
-website. It doesn't unlock Premium, remove ads, export songs, or bypass
-Spotify's copy protection.
-
-The built-in player uses
-[librespot](https://github.com/librespot-org/librespot) and stays available.
-We know of no confirmed bans from normal Premium listening with it, though
-Spotify sometimes refuses it, which shows up as an
-[audio key error](/troubleshooting/#audio-key).
-
-## What it does not do
-
-Spotifast has a limited scope:
-
-- **Playing needs Spotify Premium**, both on this computer and when
-  controlling another device. Free accounts can browse and search.
-- Built-in playback setup asks for two Spotify approvals: one to access your library, another
-  to play music on this computer. [How it connects](/how-it-connects/)
-  explains why.
-- **The built-in player supports up to 320 kbps.** librespot cannot play
-  Spotify Lossless. Since 0.15, Spotifast also offers the optional
-  [Soloist player](/soloist/), which uses Spotify's own implementation with
-  lossless support. Soloist does not report the delivered audio format.
-  Spotifast's [private audio routes](/soloist/#playback-and-current-limits)
-  provide EQ and visualizers on Linux and Mac, and visualizers on Windows.
-- No video podcasts or social features.
-- Changes at Spotify can briefly interrupt features until an update.
-
-Bug reports should include `spotifast.log`, `panic.log` after a crash, and
-steps to reproduce the problem. See the
-[issue form](https://github.com/crmne/spotifast/issues/new/choose).
-Development builds after 0.8.0 also record the app version, operating system,
-and graphics details in the log. If the window fails to open, the log can
-help explain why, even when you started the app from your desktop.
-
-## Prior art
-
-Spotifast is written in Rust, with [egui](https://www.egui.rs) and
-[fastframe](https://fastframe.dev) for its interface and
-[librespot](https://github.com/librespot-org/librespot) for Spotify playback.
-fastframe is the shared foundation of a family of native apps, including
-Spotifast's sibling [ZapFast](https://zapfast.rocks), a native client for
-WhatsApp. Spotifast takes inspiration from
-[spotify-tui](https://github.com/Rigellute/spotify-tui),
-[spotify-player](https://github.com/aome510/spotify-player),
-[ncspot](https://github.com/hrkfdn/ncspot), and
-[Omarchy Spotify](https://github.com/stappmus/Omarchy-Spotify).
-
-Spotifast is an independent project, not affiliated with or endorsed by
-Spotify AB. Spotify is a trademark of Spotify AB.
+- **Fast & low memory:** Native GPU rendering via `eframe` / `glow` instead of a Chromium web view.
+- **No external playback account gates:** Search and listen immediately using YouTube / YouTube Music.
+- **Rich desktop extras:** Discord Rich Presence, classic Winamp/WMP mini player (`Resonix Tall` & `Resonix Wide`), MilkDrop visuals, and CLI control (`resonix --help`).

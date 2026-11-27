@@ -4,7 +4,7 @@ description: What Spotify's APIs, librespot and Soloist provide, and where suppo
 nav_order: 3
 ---
 
-Spotifast uses Spotify's
+Resonix uses Spotify's
 [Web API](https://developer.spotify.com/documentation/web-api) for account and
 catalogue data. It uses [librespot](https://github.com/librespot-org/librespot)
 for a few extra details and for built-in audio playback. The optional
@@ -15,11 +15,11 @@ protocol or an internal capability is not enough to expose a working control.
 
 ## Web API
 
-Spotifast uses the Web API for:
+Resonix uses the Web API for:
 
 - **Account:** profile details, followed artists, top artists and tracks, and
-  the last fifty plays. Spotifast keeps a longer local
-  [history](/using-spotifast/#recent).
+  the last fifty plays. Resonix keeps a longer local
+  [history](/using-resonix/#recent).
 - **Library:** playlists, saved tracks, albums, shows, and episodes. It can
   also save and remove items.
 - **Playlists:** reading, creating, renaming, changing the description and
@@ -41,7 +41,7 @@ five accounts, and an extension needs a registered business with hundreds of
 thousands of monthly listeners. Spotify's desktop client identity, the one
 librespot streams with, signs in to the Web API, but every request it makes
 there is answered with "too many requests" from the first one (tried
-2026-10-25). Spotifast limits heavy requests and pauses a session when
+2026-10-25). Resonix limits heavy requests and pauses a session when
 Spotify sends a `Retry-After` response.
 [Spotify is being slow](/troubleshooting/#rate-limits) explains it for
 listeners.
@@ -58,13 +58,13 @@ signed in. See [How It Connects](/how-it-connects/).
 ## librespot session
 
 librespot signs in to Spotify and uses the same protocol as Spotify's own
-clients. Spotifast uses its session for:
+clients. Resonix uses its session for:
 
-- **Playlist folders and order.** Spotifast can read them from Spotify's
+- **Playlist folders and order.** Resonix can read them from Spotify's
   rootlist. librespot cannot create, rename, or move folders.
 - **Playlist permissions.** The rootlist shows when a playlist shared by
   invitation can be edited. The Web API's `collaborative` flag does not cover
-  these playlists. Spotifast cannot manage collaborators.
+  these playlists. Resonix cannot manage collaborators.
 - **Playlists a personal app cannot read.** Title, cover, and songs of
   other people's playlists, Spotify's own among them, and of the account's
   own when there is no personal app, so they open without a Web API quota. Whether a
@@ -79,12 +79,12 @@ clients. Spotifast uses its session for:
   play, it is skipped when reached, as it would be anywhere else.
 - **Library playlists the Web API lists blank.** The library list gives
   some of Spotify's own playlists, "This Is" ones among them, no name,
-  cover, description, or songs. Spotifast reads each one's header over the
+  cover, description, or songs. Resonix reads each one's header over the
   session once per sign-in to fill its row. Without local playback those
   rows stay blank.
 - **Removing one copy of a repeated song.** The Web API removes a song from
   a playlist by URI, every copy at once, and ignores positions. When a list
-  holds a song more than once and one copy is removed, Spotifast reads the
+  holds a song more than once and one copy is removed, Resonix reads the
   list over the session and removes that row by index through the playlist
   service Spotify's own clients edit, so the other copies keep their place
   and dates. Without local playback it refuses that removal instead of taking
@@ -143,19 +143,19 @@ clients. Spotifast uses its session for:
   does not answer, the older buddy list stands in, which reports a song only
   after it ends.
 - **Google Cast speakers and groups.** librespot has no Cast sender, so
-  Spotifast starts Spotify's receiver on the device itself. The session then
+  Resonix starts Spotify's receiver on the device itself. The session then
   obtains a token for that receiver, as Spotify's own apps do. See
   [how it connects](/how-it-connects/#google-cast-devices).
 
 ### Private requests
 
-Where no public API covers a feature, Spotifast may read the private
+Where no public API covers a feature, Resonix may read the private
 endpoints Spotify's own apps use, through the librespot session. These
 requests only read; the one exception is pre-save on upcoming album pages,
 which writes only when the user presses the button. Requests to Spotify's
 client API go into librespot first: a pull request upstream, carried in
-Spotifast's librespot fork until a librespot release includes it. Pathfinder
-queries, which librespot does not make, stay in Spotifast. Spotify can change
+Resonix's librespot fork until a librespot release includes it. Pathfinder
+queries, which librespot does not make, stay in Resonix. Spotify can change
 any of these without notice, so a feature that uses one falls back to the Web
 API where it has an answer, and otherwise leaves out what it could not read.
 
@@ -164,15 +164,15 @@ API where it has an answer, and otherwise leaves out what it could not read.
 [Spotify Soloist](/soloist/) can be downloaded and managed from Settings.
 It supplies Spotify's own playback implementation on Linux, Apple Silicon
 macOS and x86_64 Windows. Each listener supplies a personal Soloist key and
-pairs once in the official Spotify app. Spotifast renews expiring builds
+pairs once in the official Spotify app. Resonix renews expiring builds
 from Spotify's download server and retains its existing library connections.
 Basic controls and state use Soloist's loopback API; collection offsets use
 the existing Spotify playback requests. Full queue editing and audio access
 remain unavailable through Soloist's documented API. On Linux with PipeWire,
-Spotifast processes its owned Soloist output through the operating system for
+Resonix processes its owned Soloist output through the operating system for
 EQ and visualizers; it does not capture the system mix.
 [Native audio support](/soloist/#native-audio) adds process-only Mac
-EQ and visualizers, and Windows visualizers. The Mac route applies Spotifast’s
+EQ and visualizers, and Windows visualizers. The Mac route applies Resonix’s
 output volume after the visualizers and hold Soloist's source at 100% once
 redirected. Spotify/phone volume events change that output level before the
 source is reset, so Spotify's indicator returns to 100%. Windows capture
@@ -184,7 +184,7 @@ audible EQ route.
 librespot provides:
 
 - Spotify catalogue playback at up to 320 kbps.
-- Gapless playback, normalisation, and a local audio cache. Spotifast's fork
+- Gapless playback, normalisation, and a local audio cache. Resonix's fork
   also prepares the start of the next two songs, so a skip plays at once.
 - Spotify Connect, so another Spotify client can transfer playback to this
   computer.
@@ -202,23 +202,23 @@ librespot provides:
   ([librespot#1840](https://github.com/librespot-org/librespot/pull/1840)).
   The player reads the folder when local playback starts, so songs added
   later play after the next restart. See
-  [issue #3](https://github.com/crmne/spotifast/issues/3). Spotify's queue
+  [issue #3](https://github.com/ItsARCn/Resonix/issues/3). Spotify's queue
   refuses a `spotify:local:` entry, so such a song is queued on this
   computer's own player, and only while it plays
-  ([issue #1002](https://github.com/crmne/spotifast/issues/1002)). Spotify
-  has no cover or lyrics for a local file either, so Spotifast reads them
+  ([issue #1002](https://github.com/ItsARCn/Resonix/issues/1002)). Spotify
+  has no cover or lyrics for a local file either, so Resonix reads them
   from the file: the picture in its tags (an MP3's ID3 `APIC` frame or a
   FLAC `PICTURE` block), and the words in a `.lrc` file of the same name
   beside it or in its tags (ID3 `USLT` or a `LYRICS` comment), before
   asking LRCLIB
-  ([issue #1001](https://github.com/crmne/spotifast/issues/1001)).
+  ([issue #1001](https://github.com/ItsARCn/Resonix/issues/1001)).
 
 Spotify Premium is required. librespot cannot play audio with a free account.
 
-Spotifast uses a small librespot fork: librespot's development branch with a
+Resonix uses a small librespot fork: librespot's development branch with a
 few patches that are also proposed upstream, such as normalisation data for the
 visualisers and an event for rejected audio keys. When Spotify refuses an
-audio key, nothing in Spotifast can fix it; see
+audio key, nothing in Resonix can fix it; see
 [Spotify refused the audio key](/troubleshooting/#audio-key). The patches are listed in
 `Cargo.toml` and dropped as librespot merges them.
 
@@ -229,38 +229,38 @@ The Web API and librespot do not provide these features:
 - **One Web API app for every listener.** Spotify no longer extends an app
   beyond Development Mode's five accounts for a project like this one, and
   its desktop client identity is turned away from the Web API with "too many
-  requests". Each listener registers Spotifast themselves instead, which
+  requests". Each listener registers Resonix themselves instead, which
   needs Premium on the account that registers.
 - **Pins shared with the Spotify app.** Spotify stores pins in its private
   `your-library` service. There is no Web API for it, and librespot does not
-  support its protocol. Spotifast's pins are local and are stored in
-  `settings.json`. See [issue #31](https://github.com/crmne/spotifast/issues/31).
+  support its protocol. Resonix's pins are local and are stored in
+  `settings.json`. See [issue #31](https://github.com/ItsARCn/Resonix/issues/31).
 - **Editing playlist folders.** librespot can only read them.
 - **Smart Shuffle, Jam, Blend, and similar Spotify features.** Spotify
-  generates these for its own clients. Spotifast only has plain shuffle.
+  generates these for its own clients. Resonix only has plain shuffle.
   A Blend that a Spotify app already made opens like any playlist, with
-  who added each song, but Spotifast cannot start or manage one.
+  who added each song, but Resonix cannot start or manage one.
 - **Spotify DJ.** Its special playlist context does not expose playable tracks
-  to librespot, so Spotifast leaves its card out of Made for you. See
+  to librespot, so Resonix leaves its card out of Made for you. See
   [librespot issue #1604](https://github.com/librespot-org/librespot/issues/1604).
 - **Lossless through librespot.** librespot does not receive lossless streams.
   The optional [Soloist player](/soloist/) uses Spotify's own implementation.
   Its API does not report the delivered format or expose raw audio for
-  Spotifast's equalizer and visualisers. The Linux integration uses a private
-  PipeWire audio route instead. Spotifast does not bypass DRM.
+  Resonix's equalizer and visualisers. The Linux integration uses a private
+  PipeWire audio route instead. Resonix does not bypass DRM.
 - **Local files from Spotify's Local Files playlist.** librespot cannot play
   that playlist; add the songs to another playlist first. Local files on other
   computers or phones are not shared either: Spotify keeps only their names.
 - **Audiobooks.** librespot does not play them. Spotify lists some
-  audiobooks among saved shows; since 0.10.0, Spotifast asks the
+  audiobooks among saved shows; since 0.10.0, Resonix asks the
   librespot session which ones and leaves them out of the Podcasts shelf.
 - **Offline listening and downloads.** Spotify's DRM and the project's scope
   rule these out.
-- **Playback speed and crossfade.** librespot supports neither. Spotifast
+- **Playback speed and crossfade.** librespot supports neither. Resonix
   would have to add them to its own audio path.
 - **Free-account playback.** Replacing Spotify audio with another source is
   also out of scope. See the
-  [contribution guide](https://github.com/crmne/spotifast/blob/main/CONTRIBUTING.md).
+  [contribution guide](https://github.com/ItsARCn/Resonix/blob/main/CONTRIBUTING.md).
 - **Private-session status and similar social features.** Spotify has no
   public API for them.
 - **Canvas videos and video podcasts.** librespot does not provide them.
