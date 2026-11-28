@@ -3,8 +3,8 @@ resonix_version: "0.17.2"
 description: A fast, lightweight YouTube Music client for Linux, macOS, and Windows.
 lang: en-US
 timezone: UTC
-url: https://github.com/ItsARCn/Resonix
-baseurl: ""
+url: https://itsarcn.github.io
+baseurl: "/Resonix"
 logo: /assets/images/logo.svg
 image: /screenshot.png
 

@@ -21,11 +21,6 @@ use serde::Deserialize;
 use sha1::{Digest, Sha1};
 
 const SERVICE: &str = "_spotify-connect._tcp.local.";
-/// Spotify's ZeroConf login uses this fixed initialisation vector.
-#[cfg(test)]
-const FIXED_IV: [u8; 16] = [
-    253, 81, 222, 19, 70, 203, 45, 89, 141, 68, 210, 240, 93, 20, 76, 30,
-];
 const HTTP_TIMEOUT: Duration = Duration::from_secs(6);
 /// Bound provisional Cast metadata from unauthenticated LAN advertisements.
 const MAX_CAST_RECEIVERS: usize = 128;
@@ -865,20 +860,15 @@ mod tests {
     /// account and receiver must always produce the same length and a
     /// well-formed envelope: fixed IV, ciphertext, then a 20-byte checksum.
     #[test]
-    fn login_blob_has_the_expected_envelope() {
+    fn login_blob_is_disabled_in_resonix() {
         let credentials = Credentials {
             username: "someone".into(),
             auth_type: 1,
             auth_data: vec![7u8; 80],
         };
         let receiver_key = BASE64.encode(vec![9u8; 96]);
-        let (blob, client_key) =
-            login_blob(&credentials, "abcdef0123456789", &receiver_key).unwrap();
-        let decoded = BASE64.decode(blob).unwrap();
-        assert_eq!(&decoded[..16], &FIXED_IV);
-        assert!(decoded.len() > 16 + 20);
-        assert!(!client_key.is_empty());
-        assert!(BASE64.decode(client_key).is_ok());
+        let err = login_blob(&credentials, "abcdef0123456789", &receiver_key).unwrap_err();
+        assert!(err.to_string().contains("disabled in Resonix"), "{err}");
     }
 
     #[test]
