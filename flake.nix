@@ -132,7 +132,8 @@
               postPatch = ''
                 substituteInPlace .cargo/config.toml \
                   --replace-fail '[env]' "" \
-                  --replace-fail 'CMAKE_TOOLCHAIN_FILE = { value = "packaging/rpm/libdir.cmake", relative = true }' ""
+                  --replace-fail 'CMAKE_TOOLCHAIN_FILE_x86_64_unknown_linux_gnu = { value = "packaging/rpm/libdir.cmake", relative = true }' "" \
+                  --replace-fail 'CMAKE_TOOLCHAIN_FILE_aarch64_unknown_linux_gnu = { value = "packaging/rpm/libdir.cmake", relative = true }' ""
                 substituteInPlace "$cargoDepsCopy"/projectm-sys-*/build.rs \
                   --replace-fail \
                   '.define("BUILD_SHARED_LIBS", build_shared_libs)' \
