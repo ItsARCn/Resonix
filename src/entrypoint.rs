@@ -3,7 +3,7 @@ use resonix::{app, backend, paths, settings, single_instance, util};
 use clap::{CommandFactory, FromArgMatches, Parser};
 use fastframe_shell::window::Geometry;
 
-/// A fast, native Spotify client.
+/// A fast, native YouTube Music client.
 #[derive(Debug, Parser)]
 #[command(name = env!("CARGO_BIN_NAME"), version, about)]
 struct Cli {

@@ -58,22 +58,17 @@ from the original binary checksums. PR validation never publishes.
 
 The Linux release runners are pinned to Ubuntu 24.04 (glibc 2.39). The native
 packages target Ubuntu 24.04 / Debian 13 and newer, and Fedora 41 and newer.
-Runtime-loaded GUI libraries must be declared explicitly in the YAML; ELF
-inspection only discovers linked dependencies. The ALSA library mapping also
-uses the Debian/Ubuntu `libasound2t64` name for this baseline.
+Runtime-loaded GUI libraries and external media tools (`yt-dlp` and `ffmpeg` /
+`ffmpeg-free`) are declared explicitly in the YAML; ELF inspection only discovers
+linked dependencies. The ALSA library mapping also uses the Debian/Ubuntu
+`libasound2t64` name for this baseline.
 
-Packaging CI builds both architectures using a pinned published release
-(`v0.11.2`) for pushes and PRs, or the requested version for manual and release
-runs. It then installs and removes each package in clean Ubuntu 24.04, Debian
-13, Fedora 41 and current Fedora containers on native amd64 and arm64 runners.
-Each case verifies that a settings fixture survives installation and removal,
-runs `resonix --version`, loads the GUI libraries with `dlopen`, and
-verifies the desktop entry and icon. They cover installation and library
-resolution, not a running desktop or Spotify playback. On release runs these
-checks follow artifact attachment; a failure marks the workflow as failed.
-The generated Homebrew cask is also installed, launched with `--version`,
-signature-checked, and uninstalled on a native macOS runner. Wait for this
-check before publishing the staged cask to the tap.
+Packaging CI runs on release tags (or manual dispatch with a release version) and
+installs and removes each package in clean Ubuntu 24.04, Debian 13, Fedora 41
+and current Fedora containers on native amd64 and arm64 runners. Each case
+verifies that a settings fixture survives installation and removal, runs
+`resonix --version`, checks that `yt-dlp` and `ffmpeg` are on `PATH`, loads
+the GUI libraries with `dlopen`, and verifies the desktop entry and icon.
 
 To repeat a check locally on the matching architecture, with Docker and a C
 compiler available:
@@ -83,41 +78,26 @@ bash packaging/test-install.sh ubuntu:24.04 dist/packages/1.2.3
 bash packaging/test-install.sh fedora:latest dist/packages/1.2.3
 ```
 
-Review or publish an existing build with the same installed CLI:
+## GitHub Releases & Update Signing
 
-```sh
-native-packages publish --from dist/packages/1.2.3 --to github --target linux-amd64 --target linux-arm64
-native-packages repositories
-native-packages status --offline
-```
+Resonix distributes exclusively through **GitHub Releases** (`ItsARCn/Resonix`).
+Every release tag `vX.Y.Z` triggers `.github/workflows/release.yml`, which
+builds Windows, macOS universal, Linux portable archives, AppImages (`.zsync`),
+Flatpak bundles, and then runs `.github/workflows/packaging.yml` to attach
+`.deb`, `.rpm`, and `packaging-checksums.txt`.
 
-For applications with configured AUR or Homebrew destinations, stage the
-recipes with `native-packages stage TARGET dist/packages/1.2.3/recipes`,
-inspect `native-packages diff TARGET`, run native package validation, and
-publish with `native-packages publish TARGET`. These destinations use ignored
-managed Git clones, recorded in this application's YAML configuration.
-AUR automation needs `PUBLISH_AUR=true`, `AUR_SSH_KEY` and `AUR_KNOWN_HOSTS`;
-Homebrew automation needs `PUBLISH_HOMEBREW=true` and
-`HOMEBREW_TAP_GITHUB_TOKEN`. Enable only configured destinations.
-
-The macOS and Windows targets and the Flatpak build step remain responsible
-for their native artifacts. Additional nFPM formats require suitable platform
-inputs and dependencies; adding a format does not port the application.
-See the [shared CLI documentation](https://github.com/crmne/native-packages/tree/v0.11.0)
-for commands and supported formats.
+In-app self-updates verify `checksums.txt.sig` against the Ed25519 public key
+in `assets/update-public-key.hex` using the `RESONIX_UPDATE_SIGNING_KEY`
+GitHub Actions repository secret.
 
 The manual **Flatpak from release** workflow can rebuild a missing Flatpak from
 an existing tag. It verifies the published Linux archive against `checksums.txt`
 and uses that tag's version and description with the current Flatpak app ID,
-`rocks.resonix.Resonix`, without compiling or replacing binaries.
-It uploads a workflow artifact only. After checking the bundle, attach it to the
-existing release and add its hash to `checksums.txt`, preserving every existing
-asset and checksum. Release tags stay immutable.
+`io.github.itsarcn.Resonix`, without compiling or replacing binaries.
 
-Check AUR source-directory compatibility against a downloaded source archive
+Check Arch source-directory compatibility against a downloaded source archive
 with `bash packaging/test-arch-source.sh SOURCE_ARCHIVE VERSION`. It runs the
-recipe's prepare/build/check directory handling with Cargo calls stubbed out;
-it does not replace compilation or native package installation checks.
+recipe's prepare/build/check directory handling with Cargo calls stubbed out.
 
 To upgrade the tool, change `tool.version` in `native-packages.yaml`, the matching
 immutable workflow reference, and the gem installation pins in the release and
@@ -199,43 +179,10 @@ their original signatures; this setup does not replace release assets.
 
 ## Windows signing
 
-Tag releases sign `resonix.exe` and the MSI with Azure Artifact Signing, as
-**PlentyLabs UG (haftungsbeschränkt) & Co. KG**, through native-packages:
-`windows.signing` in `native-packages.yaml` turns it on,
-`native-packages sign-windows` signs `resonix.exe` before the zip and the MSI
-pack it, and `native-packages build` signs the MSI before recording its
-checksum. Each
-signature is SHA-256 Authenticode with Microsoft's RFC 3161 timestamp,
-checked to be `Valid` and PlentyLabs' before the Windows job uploads the
-release's Windows downloads (see native-packages'
-[Windows code signing](https://github.com/crmne/native-packages/blob/v0.11.0/docs/_guides/windows-signing.md)).
-The account, `plentylabs` in West Europe, is shared by Carmine's Windows apps
-and managed in `crmne/terraform` (`azure/signing.tf`, its README's "Code
-signing").
-
-Azure Artifact Signing doesn't run on Arm runners, so the arm64 binary is
-built, checked and started on `windows-11-arm` as before, then handed to the
-release workflow's `windows` job on x64, which signs and packages both
-architectures and replaces the binary's artifact with the packages.
-
-No secret is involved. The `windows` jobs run in this repository's
-`windows-signing` environment, which deploys only from `v*` tags, and sign in
-through GitHub's OIDC token as the Entra app `GitHub resonix Windows signing`.
-That app trusts only `repo:crmne@106617/resonix@1348483831:environment:windows-signing` (GitHub's immutable subject, with the owner's and repository's ids) and holds
-the "Artifact Signing Certificate Profile Signer" role on the account. The
-environment's variables, none of them secret, are `AZURE_CLIENT_ID`,
-`AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`, `AZURE_SIGNING_ENDPOINT`,
-`AZURE_SIGNING_ACCOUNT` and `AZURE_SIGNING_PROFILE`.
-
-`AZURE_SIGNING_PROFILE` names the Public Trust certificate profile
-`plentylabs`, created once PlentyLabs' identity validation completed
-(2026-10-26), so every tag release signs. Without the environment's signing
-variables releases build unsigned; with only some of them, the Windows build
-fails rather than ship unsigned.
-
-A signature doesn't silence SmartScreen at once: reputation builds as people
-download releases signed by the same publisher, so keep signing every release
-with this identity.
+Windows release binaries and installers ship unsigned by default so builds and
+releases require no paid Microsoft Azure Artifact Signing account. Users can
+run them by choosing **More info → Run anyway** on the first-launch SmartScreen
+prompt.
 
 ## Windows Installer package
 
@@ -265,11 +212,11 @@ INSTALLFOLDER="<the app's folder>"` and accepts exit codes 0 and 3010. The packa
 - installs per user, without elevation, to `%LOCALAPPDATA%\Programs\Resonix`
   or `INSTALLFOLDER`. Run by hand, it finds the folder an earlier package or
   the setup program used.
-- keeps one `UpgradeCode`, `{3DFFED43-88FE-4A31-9461-50BE03094316}`, forever.
+- keeps one `UpgradeCode`, `{71763876-3EAC-425F-A109-92A319E904AC}`, forever.
   An update replaces the earlier version in one transaction, so a failed
   update restores it.
 - takes over a setup program install in the same transaction. It replaces the
-  files, removes `unins000.*` and the `{FCED1EA0-EBF5-4C32-BA3B-A3AD724BACC3}_is1`
+  files, removes `unins000.*` and the `{05B3C8C9-9B3A-492B-BD6E-44F4850B3377}_is1`
   uninstall entry, and keeps the Start menu entry and the desktop shortcut
   task. It never runs Inno's uninstaller, which would delete the package's files.
 - installs the `resonix-installer.txt` marker the updater looks for.
@@ -329,7 +276,7 @@ the signature covers. AppImages built by the packaging workflow would land in
 the unsigned `packaging-checksums.txt` instead.
 
 Each AppImage carries update information in its `.upd_info` section,
-`gh-releases-zsync|crmne|resonix|latest|resonix-*-x86_64.AppImage.zsync`
+`gh-releases-zsync|ItsARCn|Resonix|latest|resonix-*-x86_64.AppImage.zsync`
 (`aarch64` for ARM), so AppImageUpdate, AppImageLauncher, AM and Gear Lever
 find the newest stable release's `.zsync` file and download only the blocks
 that changed. The checks fail loudly instead of shipping a wrong string:

@@ -687,7 +687,7 @@ pub enum Command {
         uri: String,
         generation: u64,
     },
-    DownloadTrack(Track),
+    DownloadTrack(Box<Track>),
     DownloadUris {
         collection_uri: Option<String>,
         label: String,
@@ -1585,7 +1585,7 @@ fn load_downloads_library(db: &SearchCache) -> Result<crate::model::DownloadsLib
 }
 
 fn emit_downloads(db: &SearchCache, events: &std::sync::mpsc::Sender<Event>, waker: &Waker) {
-    let res = load_downloads_library(db).map_err(|msg| ApiError::Network(msg));
+    let res = load_downloads_library(db).map_err(ApiError::Network);
     let _ = events.send(Event::Api(Box::new(ApiResponse::Downloads(res))));
     waker.wake();
 }
@@ -1665,6 +1665,8 @@ impl Drop for BusyGuard {
     }
 }
 
+type ExploreSections = Arc<std::sync::Mutex<Vec<(String, Vec<YtTrack>)>>>;
+
 struct Worker {
     dirs: AppDirs,
     engine_config: EngineConfig,
@@ -1680,7 +1682,7 @@ struct Worker {
     engine: Option<Engine>,
     explore_cache: Arc<std::sync::Mutex<HashMap<String, Vec<YtTrack>>>>,
     explore_titles: Arc<std::sync::Mutex<HashMap<String, String>>>,
-    explore_sections: Arc<std::sync::Mutex<Vec<(String, Vec<YtTrack>)>>>,
+    explore_sections: ExploreSections,
     discord: crate::discord::DiscordPresence,
     _credentials: CredentialStore,
 }
@@ -1940,12 +1942,10 @@ impl Worker {
                         };
                         if matches!(res, Ok(None) | Err(_))
                             && let Some(vid) = video_id_from_uri(&req.uri)
+                            && let Ok(raw_subs) = extractor.get_subtitles(vid, "en").await
+                            && let Some(parsed) = parse_subtitles(&raw_subs)
                         {
-                            if let Ok(raw_subs) = extractor.get_subtitles(vid, "en").await
-                                && let Some(parsed) = parse_subtitles(&raw_subs)
-                            {
-                                res = Ok(Some(parsed));
-                            }
+                            res = Ok(Some(parsed));
                         }
                         let _ = events.send(Event::Lyrics {
                             uri: req.uri,
@@ -2582,7 +2582,7 @@ impl Worker {
                                 let mut seen = std::collections::HashSet::new();
                                 let mut combined =
                                     Vec::with_capacity(remote_tracks.len() + local_tracks.len());
-                                for t in remote_tracks.into_iter().chain(local_tracks.into_iter()) {
+                                for t in remote_tracks.into_iter().chain(local_tracks) {
                                     if seen.insert(t.id.clone()) {
                                         combined.push(t);
                                     }
@@ -3307,7 +3307,7 @@ impl Worker {
                         Some(t) => Ok(to_spotify_track(&t)),
                         None => match extractor.metadata(&id).await {
                             Ok(t) => {
-                                let _ = db.upsert_tracks(&[t.clone()]);
+                                let _ = db.upsert_tracks(std::slice::from_ref(&t));
                                 Ok(to_spotify_track(&t))
                             }
                             Err(e) => Err(ApiError::Network(e.to_string())),

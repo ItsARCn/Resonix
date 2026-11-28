@@ -758,7 +758,7 @@ async fn run_coordinator(
         let cache_dir = cache_dir.clone();
         let state_dir = state_dir.clone();
         let msg_tx = msg_tx.clone();
-        let feeder_ctl = Arc::clone(&feeder_ctl);
+        let feeder_ctl = Arc::clone(feeder_ctl);
 
         tokio::spawn(async move {
             match prepare_audio_track(
@@ -1202,10 +1202,10 @@ async fn run_coordinator(
                     {
                         uris = resolve_context_uris(&db, &explore_cache, ctx_uri);
                     }
-                    if uris.is_empty() {
-                        if let Some(offset) = spec.offset_uri.clone() {
-                            uris.push(offset);
-                        }
+                    if uris.is_empty()
+                        && let Some(offset) = spec.offset_uri.clone()
+                    {
+                        uris.push(offset);
                     }
 
                     if uris.is_empty() {
@@ -1298,13 +1298,13 @@ fn resolve_context_uris(
     if context_uri.starts_with("spotify:track:") || context_uri.starts_with("youtube:video:") {
         return vec![context_uri.to_string()];
     }
-    if context_uri.ends_with(":collection") || context_uri == "spotify:collection:tracks" {
-        if let Ok((liked, _)) = db.liked_tracks(0, 500) {
-            return liked
-                .into_iter()
-                .map(|t| format!("spotify:track:{}", t.id))
-                .collect();
-        }
+    if (context_uri.ends_with(":collection") || context_uri == "spotify:collection:tracks")
+        && let Ok((liked, _)) = db.liked_tracks(0, 500)
+    {
+        return liked
+            .into_iter()
+            .map(|t| format!("spotify:track:{}", t.id))
+            .collect();
     }
     if let Some(pl_id_str) = context_uri.strip_prefix("spotify:playlist:") {
         if let Some(tracks) = explore_cache

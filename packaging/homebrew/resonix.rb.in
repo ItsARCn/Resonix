@@ -1,0 +1,21 @@
+cask "resonix" do
+  version "@VERSION@"
+  sha256 "@MACOS_SHA256@"
+
+  url "https://github.com/ItsARCn/Resonix/releases/download/v#{version}/resonix-v#{version}-macos-universal.dmg"
+  name "Resonix"
+  desc "Native YouTube Music client"
+  homepage "https://github.com/ItsARCn/Resonix"
+
+  livecheck do
+    url :url
+    strategy :github_latest
+  end
+
+  app "Resonix.app"
+
+  zap trash: [
+    "~/Library/Application Support/me.paolino.resonix",
+    "~/Library/Caches/me.paolino.resonix",
+  ]
+end

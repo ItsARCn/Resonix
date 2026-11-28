@@ -106,7 +106,7 @@ fn flatpak_tray_registers_without_owning_a_name() {
             "--nocapture",
         ])
         .env(CHILD, "1")
-        .env("FLATPAK_ID", "rocks.resonix.Resonix")
+        .env("FLATPAK_ID", "io.github.itsarcn.Resonix")
         .env("DBUS_SESSION_BUS_ADDRESS", address.trim())
         .status();
     let _ = bus.kill();

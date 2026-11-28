@@ -40,7 +40,7 @@ static UPDATER: UpdaterCache = Mutex::new(None);
 
 pub const CONFIG: UpdateConfig = UpdateConfig {
     macos: MacConfig {
-        bundle_ids: &["rocks.resonix.Resonix"],
+        bundle_ids: &["io.github.itsarcn.Resonix"],
         executable_names: &["Resonix"],
         legacy_bundle_names: &[],
     },
@@ -597,7 +597,7 @@ mod tests {
             }
         );
         let flatpak = route(
-            managed(Manager::Flatpak, "flatpak update rocks.resonix.Resonix"),
+            managed(Manager::Flatpak, "flatpak update io.github.itsarcn.Resonix"),
             "0.18.0",
             "x86_64",
             no_vendor,
@@ -617,7 +617,7 @@ mod tests {
         // The release has no ARM Flatpak.
         assert_eq!(
             route(
-                managed(Manager::Flatpak, "flatpak update rocks.resonix.Resonix"),
+                managed(Manager::Flatpak, "flatpak update io.github.itsarcn.Resonix"),
                 "0.18.0",
                 "aarch64",
                 no_vendor,

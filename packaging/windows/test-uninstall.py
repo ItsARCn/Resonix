@@ -1,7 +1,7 @@
 """Run the uninstall script against disposable Windows installations.
 
 Usage: python packaging/windows/test-uninstall.py path/to/ISCC.exe
-Requires rustc to build a harmless waiting process, without Spotify access.
+Requires rustc to build a harmless waiting process, without network access.
 """
 from pathlib import Path
 import shutil
@@ -22,11 +22,11 @@ FLAGS = ["/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART"]
 class UninstallTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.temp = tempfile.TemporaryDirectory(prefix="spotifast-uninstall-")
+        cls.temp = tempfile.TemporaryDirectory(prefix="resonix-uninstall-")
         cls.addClassCleanup(cls.temp.cleanup)
         cls.root = Path(cls.temp.name)
-        cls.identity = "SpotifastUninstallTest-" + uuid.uuid4().hex
-        payload = cls.root / "spotifast.exe"
+        cls.identity = "ResonixUninstallTest-" + uuid.uuid4().hex
+        payload = cls.root / "resonix.exe"
         source = cls.root / "payload.rs"
         source.write_text('''fn main() {
     std::fs::write(std::env::args().nth(1).unwrap(), "ready").unwrap();
@@ -36,9 +36,9 @@ class UninstallTest(unittest.TestCase):
         subprocess.run(["rustc", str(source), "-o", str(payload)], check=True, timeout=60)
         (cls.root / "keep.txt").write_text("Must survive a blocked uninstall.")
         # Compile the production event handlers with an isolated app identity.
-        # Redirect their protocol lookup too, so no real Spotify key is touched.
-        code = (ROOT / "spotifast.iss").read_text(encoding="utf-8").split("[Code]", 1)[1]
-        code = code.replace("Software\\Classes\\spotify", "Software\\Classes\\" + cls.identity)
+        # Redirect their protocol lookup too, so no real scheme key is touched.
+        code = (ROOT / "resonix.iss").read_text(encoding="utf-8").split("[Code]", 1)[1]
+        code = code.replace("Software\\Classes\\resonix", "Software\\Classes\\" + cls.identity)
         # Exercise the close action without clicking a desktop dialog in CI.
         code = code.replace("function InitializeUninstall: Boolean;",
                             "function CheckUninstall: Boolean;")
@@ -46,13 +46,13 @@ class UninstallTest(unittest.TestCase):
 function InitializeUninstall: Boolean;
 begin
   if ExpandConstant('{param:TESTCLOSE|0}') = '1' then
-    CloseInstalledSpotifast;
+    CloseInstalledResonix;
   Result := CheckUninstall;
 end;
 '''
         script = cls.root / "test.iss"
         script.write_text(f'''#define Arch "x86_64"
-#define AppExeName "spotifast.exe"
+#define AppExeName "resonix.exe"
 [Setup]
 AppId={cls.identity}
 AppName={cls.identity}
@@ -111,7 +111,7 @@ Source: "{cls.root / 'keep.txt'}"; DestDir: "{{app}}"
         self.assertIsNone(process.poll())
 
     def test_running_executable_preserves_the_whole_installation(self):
-        self.run_payload(self.app / "spotifast.exe")
+        self.run_payload(self.app / "resonix.exe")
         before = {p.name: p.read_bytes() for p in self.app.iterdir() if p.is_file()}
         self.assertNotEqual(self.uninstall(), 0)
         after = {p.name: p.read_bytes() for p in self.app.iterdir() if p.is_file()}
@@ -119,21 +119,21 @@ Source: "{cls.root / 'keep.txt'}"; DestDir: "{{app}}"
         self.assertIsNone(self.processes[0].poll())
 
     def test_other_copy_does_not_block_uninstall(self):
-        self.run_payload(self.root / "spotifast.exe")
+        self.run_payload(self.root / "resonix.exe")
         self.assertEqual(self.uninstall(), 0)
-        self.assertFalse((self.app / "spotifast.exe").exists())
+        self.assertFalse((self.app / "resonix.exe").exists())
         self.assertFalse((self.app / "keep.txt").exists())
 
     def test_close_terminates_only_the_installed_copy(self):
-        self.run_payload(self.app / "spotifast.exe")
-        self.run_payload(self.root / "spotifast.exe")
+        self.run_payload(self.app / "resonix.exe")
+        self.run_payload(self.root / "resonix.exe")
         self.assertEqual(self.uninstall('/TESTCLOSE=1'), 0)
         self.processes[0].wait(timeout=10)
         self.assertIsNone(self.processes[1].poll())
-        self.assertFalse((self.app / "spotifast.exe").exists())
+        self.assertFalse((self.app / "resonix.exe").exists())
 
     def test_missing_executable_does_not_block_cleanup(self):
-        (self.app / "spotifast.exe").unlink()
+        (self.app / "resonix.exe").unlink()
         self.assertEqual(self.uninstall(), 0)
         self.assertFalse((self.app / "keep.txt").exists())
 

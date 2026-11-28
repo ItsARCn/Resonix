@@ -1,0 +1,69 @@
+# Maintainer: ItsARCn
+pkgname=resonix-git
+pkgver=@VERSION@
+pkgrel=1
+pkgdesc="Native YouTube Music client"
+arch=('x86_64' 'aarch64')
+url="https://github.com/ItsARCn/Resonix"
+license=('MIT')
+install="${pkgname}.install"
+depends=('dbus' 'alsa-lib' 'libpipewire' 'libglvnd' 'libxkbcommon' 'wayland' 'libx11' 'yt-dlp' 'ffmpeg')
+makedepends=('git' 'cargo' 'cmake' 'clang')
+checkdepends=('procps-ng')
+optdepends=('libxkbcommon-x11: keyboard handling in X11 sessions'
+            'pipewire-pulse: PipeWire as the PulseAudio server')
+provides=("resonix=$pkgver")
+conflicts=('resonix' 'resonix-bin')
+options=('!debug' '!lto')
+source=("${pkgname}::git+https://github.com/ItsARCn/Resonix.git")
+sha256sums=('SKIP')
+
+pkgver() {
+  cd "${srcdir}/${pkgname}"
+  git describe --long --tags --abbrev=7 |
+    sed 's/^v//;s/-\(rc\|alpha\|beta\)\([0-9]*\)-/\1\2-/;s/-/.r/;s/-g/./'
+}
+
+prepare() {
+  cd "${srcdir}/${pkgname}"
+  export RUSTUP_TOOLCHAIN=stable
+  local need have
+  need=$(sed -n 's/^rust-version = "\(.*\)"$/\1/p' Cargo.toml)
+  have=$(rustc --version 2>/dev/null | cut -d' ' -f2)
+  if [[ -n "${need}" && -n "${have}" && "$(vercmp "${have}" "${need}")" -lt 0 ]]; then
+    error "Resonix needs Rust ${need} or newer, but rustc is ${have}."
+    plain "With rustup, run: rustup update stable"
+    plain "With Arch's rust package, update the system: pacman -Syu"
+    return 1
+  fi
+  cargo fetch --locked --target "$(rustc -vV | sed -n 's/host: //p')"
+}
+
+build() {
+  cd "${srcdir}/${pkgname}"
+  export RUSTUP_TOOLCHAIN=stable
+  export CARGO_TARGET_DIR=target
+  export RUSTFLAGS="${RUSTFLAGS:-} --remap-path-prefix=${srcdir}=/"
+  cargo build --frozen --release
+}
+
+check() {
+  ulimit -n 4096 2>/dev/null || true
+  cd "${srcdir}/${pkgname}"
+  export RUSTUP_TOOLCHAIN=stable
+  cargo test --frozen --features demo
+}
+
+package() {
+  cd "${srcdir}/${pkgname}"
+
+  install -Dm755 "target/release/resonix" "${pkgdir}/usr/bin/resonix"
+  install -Dm644 "LICENSE" "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+  install -Dm644 "README.md" "${pkgdir}/usr/share/doc/${pkgname}/README.md"
+  install -Dm644 "packaging/applications/resonix.desktop" \
+    "${pkgdir}/usr/share/applications/resonix.desktop"
+  install -Dm644 "packaging/icons/resonix.svg" \
+    "${pkgdir}/usr/share/icons/hicolor/scalable/apps/resonix.svg"
+  install -Dm644 contrib/omarchy/resonix.json.tpl "${pkgdir}/usr/share/resonix/omarchy/resonix.json.tpl"
+  install -Dm755 contrib/omarchy/resonix-theme "${pkgdir}/usr/share/resonix/omarchy/resonix-theme"
+}

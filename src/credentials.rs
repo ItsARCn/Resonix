@@ -26,7 +26,7 @@ pub struct Credentials {
     pub auth_data: Vec<u8>,
 }
 
-const SERVICE: &str = "rocks.resonix.Resonix";
+const SERVICE: &str = "io.github.itsarcn.Resonix";
 const TIMEOUT: Duration = Duration::from_secs(20);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]

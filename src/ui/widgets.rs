@@ -1258,7 +1258,8 @@ fn item_menu_at(
                 &gettext(locale, "Download"),
             )
         {
-            app.actions.push(Action::DownloadTrack(track.clone()));
+            app.actions
+                .push(Action::DownloadTrack(Box::new(track.clone())));
         }
         add_to_playlist_menu(ui, app, std::slice::from_ref(item));
     } else if menu_item(
@@ -2335,7 +2336,8 @@ fn track_row_contents(
                 if theme::icon_button(&mut child, Icon::Download, 16.0, color, hover, &tooltip)
                     .clicked()
                 {
-                    app.actions.push(Action::DownloadTrack(track.clone()));
+                    app.actions
+                        .push(Action::DownloadTrack(Box::new(track.clone())));
                 }
             }
         }

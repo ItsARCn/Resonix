@@ -1051,7 +1051,7 @@ fn output_options(device: fastframe_audio::Device, buffer_ms: u32) -> OutputOpti
     let buffer_ms = buffer_ms.clamp(*BUFFER_MS_RANGE.start(), *BUFFER_MS_RANGE.end());
     OutputOptions {
         device,
-        channels: NUM_CHANNELS as u16,
+        channels: NUM_CHANNELS,
         sample_rate: Some(SAMPLE_RATE),
         buffer: Buffer::FixedOnWindows(BufferSize::Duration(Duration::from_millis(u64::from(
             buffer_ms,
@@ -1243,7 +1243,7 @@ mod tests {
         let options = output_options(id.clone(), DEFAULT_BUFFER_MS);
         assert_eq!(options.device, id);
         assert_eq!(options.sample_rate, Some(SAMPLE_RATE));
-        assert_eq!(options.channels, NUM_CHANNELS as u16);
+        assert_eq!(options.channels, NUM_CHANNELS);
         assert!(options.follow_default);
     }
 
@@ -1492,7 +1492,7 @@ mod tests {
             .fetch_add(u64::from(frames), Ordering::Relaxed);
         TransitionSource::new(
             rodio::buffer::SamplesBuffer::new(
-                NUM_CHANNELS.into(),
+                NUM_CHANNELS,
                 RATE,
                 vec![1.0; frames as usize * NUM_CHANNELS as usize],
             ),

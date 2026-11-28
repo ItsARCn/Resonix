@@ -1,13 +1,12 @@
 #!/usr/bin/env bash
-# Make the source RPM Fedora COPR builds Spotifast from.
+# Make a source RPM for Resonix.
 #
 #   packaging/rpm/build-srpm.sh VERSION OUTPUT_DIR
 #
 # Downloads the release's source archive, checks it against the release's
-# checksums.txt, vendors every crate Cargo.lock names (COPR builds offline),
-# renders spotifast.spec.in and packs both archives into
-# OUTPUT_DIR/spotifast-VERSION-1.src.rpm. Needs curl, cargo, xz and rpmbuild;
-# on Fedora: dnf install cargo rpm-build xz curl.
+# checksums.txt, vendors every crate Cargo.lock names, renders resonix.spec.in
+# and packs both archives into OUTPUT_DIR/resonix-VERSION-1.src.rpm. Needs
+# curl, cargo, xz and rpmbuild; on Fedora: dnf install cargo rpm-build xz curl.
 set -euo pipefail
 
 if [[ $# -ne 2 ]]; then
@@ -19,8 +18,8 @@ version=${1#v}
 here=$(cd "$(dirname "$0")" && pwd)
 mkdir -p "$2"
 out=$(cd "$2" && pwd)
-base="https://github.com/crmne/spotifast/releases/download/v${version}"
-archive="spotifast-v${version}-source.tar.gz"
+base="https://github.com/ItsARCn/Resonix/releases/download/v${version}"
+archive="resonix-v${version}-source.tar.gz"
 
 work=$(mktemp -d "${out}/.srpm.XXXXXX")
 trap 'rm -rf "$work"' EXIT
@@ -36,7 +35,7 @@ line=$(grep -E "^[0-9a-f]{64}  ${archive//./\\.}\$" "$work/checksums.txt") || {
 (cd "$work" && sha256sum --check --quiet <<<"$line")
 
 tar -xzf "$work/$archive" -C "$work"
-src="$work/spotifast-${version}"
+src="$work/Resonix-${version}"
 rust_version=$(sed -n 's/^rust-version = "\(.*\)"$/\1/p' "$src/Cargo.toml")
 if [[ -z "$rust_version" ]]; then
   echo "Cargo.toml has no rust-version" >&2
@@ -60,23 +59,22 @@ for crate in "$src"/vendor/windows-[0-9]* "$src"/vendor/windows_* \
   : >"$crate/src/lib.rs"
   printf '{"files":{},"package":"%s"}\n' "$package" >"$crate/.cargo-checksum.json"
 done
-XZ_OPT=-T0 tar -C "$src" -cJf "$work/spotifast-${version}-vendor.tar.xz" \
+XZ_OPT=-T0 tar -C "$src" -cJf "$work/resonix-${version}-vendor.tar.xz" \
   vendor vendor-config.toml
 
 sed -e "s/@VERSION@/${version}/g" \
   -e "s/@RUST_VERSION@/${rust_version}/g" \
   -e "s/@RPM_DATE@/$(LC_ALL=C date -u '+%a %b %d %Y')/g" \
-  "$here/spotifast.spec.in" >"$work/spotifast.spec"
-if grep -q '@[A-Z_]*@' "$work/spotifast.spec"; then
-  echo "spotifast.spec.in has a placeholder this script does not fill" >&2
+  "$here/resonix.spec.in" >"$work/resonix.spec"
+if grep -q '@[A-Z_]*@' "$work/resonix.spec"; then
+  echo "resonix.spec.in has a placeholder this script does not fill" >&2
   exit 1
 fi
 
-# No dist tag: COPR rebuilds the source RPM once per chroot with its own.
 rpmbuild -bs \
   --define "_sourcedir $work" \
   --define "_srcrpmdir $out" \
   --define "dist %{nil}" \
-  "$work/spotifast.spec" >/dev/null
-cp "$work/spotifast.spec" "$out/spotifast.spec"
-echo "$out/spotifast-${version}-1.src.rpm"
+  "$work/resonix.spec" >/dev/null
+cp "$work/resonix.spec" "$out/resonix.spec"
+echo "$out/resonix-${version}-1.src.rpm"

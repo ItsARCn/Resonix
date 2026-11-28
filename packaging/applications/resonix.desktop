@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Resonix
+GenericName=Music Player
+Comment=A native YouTube Music client
+Exec=resonix %u
+Terminal=false
+Categories=AudioVideo;Audio;Player;Music;
+Keywords=youtube;music;player;streaming;resonix;
+Icon=resonix
+StartupNotify=true
+StartupWMClass=resonix

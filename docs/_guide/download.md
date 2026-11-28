@@ -82,9 +82,7 @@ in a `resonix-data` folder next to it, so the folder carries everything
 - [Windows ZIP (most PCs)]({{ base }}/resonix-v{{ v }}-x86_64-pc-windows-msvc.zip)
 - [Windows ZIP (ARM PCs)]({{ base }}/resonix-v{{ v }}-aarch64-pc-windows-msvc.zip)
 
-The Windows executable and installer are signed as **PlentyLabs UG
-(haftungsbeschränkt) & Co. KG**. SmartScreen may still show a warning while
-the publisher builds reputation.
+Windows release binaries and installers are unsigned open-source builds, so Windows SmartScreen may show an *"Unknown publisher"* prompt on first launch (click **More info → Run anyway**).
 
 Resonix needs OpenGL 2.0 or newer, which every current Windows graphics
 driver provides. In a virtual machine or remote session that only has the
@@ -92,7 +90,7 @@ Microsoft Basic Display Adapter, it cannot open its window and says so in a
 message that links to this page; install the machine's graphics driver, or
 enable GPU acceleration for the virtual machine.
 
-To choose which app opens Spotify links, use **Settings → Apps → Default apps**
+To choose which app opens `resonix:` links, use **Settings → Apps → Default apps**
 in Windows.
 
 Uninstalling while Resonix runs removes nothing until it is closed. The
@@ -165,16 +163,16 @@ yay -S resonix-git      # built from the latest commit
 
 ### Flatpak
 
-Download the [Resonix Flatpak]({{ base }}/resonix-v{{ v }}-x86_64.flatpak?flatpak-id=rocks.resonix.Resonix).
+Download the [Resonix Flatpak]({{ base }}/resonix-v{{ v }}-x86_64.flatpak?flatpak-id=io.github.itsarcn.Resonix).
 It requires Flatpak and the Freedesktop 25.08 runtime, a set of shared
 components used by Flatpak apps:
 
 ```sh
 flatpak install --user ~/Downloads/resonix-v{{ v }}-x86_64.flatpak
-flatpak run rocks.resonix.Resonix
+flatpak run io.github.itsarcn.Resonix
 ```
 
-The application ID is **`rocks.resonix.Resonix`**.
+The application ID is **`io.github.itsarcn.Resonix`**.
 
 To update this Flatpak installation, download and install the new release.
 When one is out, Resonix's update button shows the command. Flathub

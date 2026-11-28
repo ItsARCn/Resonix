@@ -1,0 +1,43 @@
+# Maintainer: ItsARCn
+pkgname=resonix-bin
+pkgver=@VERSION@
+pkgrel=@PKGREL@
+pkgdesc="Native YouTube Music client"
+arch=('x86_64' 'aarch64')
+url="https://github.com/ItsARCn/Resonix"
+license=('MIT')
+install="${pkgname}.install"
+# alsa-lib and libpipewire are linked directly; the rest are dlopened by winit
+# and glutin at startup, and yt-dlp/ffmpeg handle stream resolution and audio.
+depends=('dbus' 'alsa-lib' 'libpipewire' 'libglvnd' 'libxkbcommon' 'wayland' 'libx11' 'yt-dlp' 'ffmpeg')
+optdepends=('libxkbcommon-x11: keyboard handling in X11 sessions'
+            'pipewire-pulse: PipeWire as the PulseAudio server')
+provides=("resonix=$pkgver")
+conflicts=('resonix' 'resonix-git')
+options=('!debug' '!strip')
+_repo="https://github.com/ItsARCn/Resonix"
+source_x86_64=("${_repo}/releases/download/v${pkgver}/resonix-v${pkgver}-x86_64-unknown-linux-gnu.tar.gz")
+source_aarch64=("${_repo}/releases/download/v${pkgver}/resonix-v${pkgver}-aarch64-unknown-linux-gnu.tar.gz")
+sha256sums_x86_64=('@AMD64_SHA256@')
+sha256sums_aarch64=('@ARM64_SHA256@')
+
+package() {
+  local target
+  case "$CARCH" in
+    x86_64) target="x86_64-unknown-linux-gnu" ;;
+    aarch64) target="aarch64-unknown-linux-gnu" ;;
+  esac
+  local dir="${srcdir}/resonix-v${pkgver}-${target}"
+
+  install -Dm755 "${dir}/resonix" "${pkgdir}/usr/bin/resonix"
+  install -Dm644 "${dir}/LICENSE" "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+  install -Dm644 "${dir}/README.md" "${pkgdir}/usr/share/doc/${pkgname}/README.md"
+  install -Dm644 "${dir}/packaging/applications/resonix.desktop" \
+    "${pkgdir}/usr/share/applications/resonix.desktop"
+  install -Dm644 "${dir}/packaging/icons/resonix.svg" \
+    "${pkgdir}/usr/share/icons/hicolor/scalable/apps/resonix.svg"
+  if [[ -d "${dir}/contrib/omarchy" ]]; then
+    install -Dm644 "${dir}/contrib/omarchy/resonix.json.tpl" "${pkgdir}/usr/share/resonix/omarchy/resonix.json.tpl"
+    install -Dm755 "${dir}/contrib/omarchy/resonix-theme" "${pkgdir}/usr/share/resonix/omarchy/resonix-theme"
+  fi
+}

@@ -1,0 +1,20 @@
+print_resonix_post_install() {
+  cat <<'EOF2'
+Resonix setup:
+
+  Launch Resonix and start playing, searching, or browsing YouTube Music.
+
+  Closing the window keeps music playing in the system tray; quit from
+  the tray menu or with Ctrl+Q.
+
+Docs: https://github.com/ItsARCn/Resonix#readme
+EOF2
+}
+
+post_install() {
+  print_resonix_post_install
+}
+
+post_upgrade() {
+  print_resonix_post_install
+}

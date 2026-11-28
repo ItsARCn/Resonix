@@ -1,5 +1,5 @@
 {
-  description = "Spotify, native and fast";
+  description = "YouTube Music, native and fast";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -88,7 +88,7 @@
       packages = forAllSystems (
         pkgs:
         let
-          spotifast =
+          resonix =
             let
               toolchain = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
               rustPlatform = pkgs.makeRustPlatform {
@@ -108,9 +108,13 @@
                   libxrandr
                 ]
               );
+              runtimeTools = with pkgs; [
+                yt-dlp
+                ffmpeg
+              ];
             in
             rustPlatform.buildRustPackage rec {
-              pname = "spotifast";
+              pname = "resonix";
               version = (pkgs.lib.importTOML ./Cargo.toml).package.version;
               src = self;
 
@@ -171,34 +175,36 @@
                 export SSL_CERT_FILE="${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
               '';
 
-              # The GUI dlopens its Wayland, X11 and GL libraries at run time.
+              # The GUI dlopens its Wayland, X11 and GL libraries at run time,
+              # and runtime audio extraction/decoding uses yt-dlp and ffmpeg.
               postFixup =
                 pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isLinux ''
-                  wrapProgram $out/bin/spotifast \
-                    --prefix LD_LIBRARY_PATH : ${pkgs.lib.makeLibraryPath runtimeLibs}
+                  wrapProgram $out/bin/resonix \
+                    --prefix LD_LIBRARY_PATH : ${pkgs.lib.makeLibraryPath runtimeLibs} \
+                    --prefix PATH : ${pkgs.lib.makeBinPath runtimeTools}
                 ''
                 + pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isDarwin ''
-                  rcodesign sign "$out/Applications/Spotifast.app"
+                  rcodesign sign "$out/Applications/Resonix.app"
                 '';
 
               postInstall =
                 pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isLinux ''
-                  install -Dm644 packaging/applications/spotifast.desktop \
-                    $out/share/applications/spotifast.desktop
+                  install -Dm644 packaging/applications/resonix.desktop \
+                    $out/share/applications/resonix.desktop
                   install -Dm644 packaging/icons/resonix.svg \
-                    $out/share/icons/hicolor/scalable/apps/spotifast.svg
-                  install -Dm644 contrib/omarchy/spotifast.json.tpl \
-                    $out/share/spotifast/omarchy/spotifast.json.tpl
-                  install -Dm755 contrib/omarchy/spotifast-theme \
-                    $out/share/spotifast/omarchy/spotifast-theme
+                    $out/share/icons/hicolor/scalable/apps/resonix.svg
+                  install -Dm644 contrib/omarchy/resonix.json.tpl \
+                    $out/share/resonix/omarchy/resonix.json.tpl
+                  install -Dm755 contrib/omarchy/resonix-theme \
+                    $out/share/resonix/omarchy/resonix-theme
                 ''
                 + pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isDarwin ''
-                  app="$out/Applications/Spotifast.app/Contents"
+                  app="$out/Applications/Resonix.app/Contents"
                   mkdir -p "$app/MacOS" "$app/Resources"
-                  executable=Spotifast
-                  identifier=rocks.spotifast.Spotifast
-                  cp "$out/bin/spotifast" "$app/MacOS/$executable"
-                  icnsify packaging/macos/icon-1024.png -o "$app/Resources/spotifast.icns"
+                  executable=Resonix
+                  identifier=io.github.itsarcn.Resonix
+                  cp "$out/bin/resonix" "$app/MacOS/$executable"
+                  icnsify packaging/macos/icon-1024.png -o "$app/Resources/resonix.icns"
                   substitute packaging/macos/Info.plist "$app/Info.plist" \
                     --replace-fail __VERSION__ "${version}" \
                     --replace-fail __BUILD__ "${pkgs.lib.head (pkgs.lib.splitString "-" version)}" \
@@ -207,20 +213,20 @@
                 '';
 
               meta = {
-                description = "Fast native Spotify client with local playback and Spotify Connect";
-                homepage = "https://spotifast.rocks";
+                description = "Fast native YouTube Music client with local playback, EQ, and lyrics";
+                homepage = "https://github.com/ItsARCn/Resonix";
                 license = pkgs.lib.licenses.mit;
-                mainProgram = "spotifast";
+                mainProgram = "resonix";
               };
             };
 
         in
         {
-          default = spotifast;
-          inherit spotifast;
+          default = resonix;
+          inherit resonix;
         }
         // pkgs.lib.optionalAttrs pkgs.stdenv.hostPlatform.isDarwin {
-          spotifast-app = spotifast;
+          resonix-app = resonix;
         }
       );
 

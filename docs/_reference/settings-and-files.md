@@ -40,8 +40,8 @@ where each system keeps it, not in `settings.json`:
 | Platform | Where |
 | --- | --- |
 | Linux | `~/.config/autostart/resonix.desktop` (`$XDG_CONFIG_HOME/autostart`), which runs `resonix`, with `--start-hidden` for the tray |
-| Flatpak | Registered through the background portal; Resonix keeps a copy of what it asked for in `~/.var/app/rocks.resonix.Resonix/config/autostart/resonix.desktop` |
-| macOS 13 and later | Login Items: Resonix itself to open with the window, or the `rocks.resonix.Resonix.autostart` agent inside the app, which opens it with `--start-hidden` |
+| Flatpak | Registered through the background portal; Resonix keeps a copy of what it asked for in `~/.var/app/io.github.itsarcn.Resonix/config/autostart/resonix.desktop` |
+| macOS 13 and later | Login Items: Resonix itself to open with the window, or the `io.github.itsarcn.Resonix.autostart` agent inside the app, which opens it with `--start-hidden` |
 | Windows | The `Resonix` value under `HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run` |
 
 Deleting the entry turns it off. Uninstalling Resonix does not remove the
@@ -82,7 +82,7 @@ The following credential storage is available since 0.8.0.
 
 Durable grants use **Secret Service on Linux**, **Keychain on macOS**, and
 **Credential Manager on Windows**, under the service name
-`rocks.resonix.Resonix`. Entries are separated by application state
+`io.github.itsarcn.Resonix`. Entries are separated by application state
 location and grant type; Web grants carry their Client ID and must verify as
 the same account. Playback and receiver activation require that account too.
 Non-secret settings and session data remain readable JSON. Native credential
@@ -287,7 +287,7 @@ automatic requests and shows a Retry button in the reserved row space.
 Since 0.8.0, Flatpak also preserves the fallback
 state directory used when `XDG_STATE_HOME` is unset. Session state, history,
 logs, and credential revocation markers survive a full quit and relaunch under
-`~/.var/app/rocks.resonix.Resonix/.local/state/resonix/`. Configuration
+`~/.var/app/io.github.itsarcn.Resonix/.local/state/resonix/`. Configuration
 and caches remain under the app's `config/` and `cache/` directories. State
 already lost on quitting an older release cannot be recovered.
 

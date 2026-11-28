@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.itsarcn.Resonix</id>
+  <name>Resonix</name>
+  <summary>A native YouTube Music client</summary>
+  <developer id="io.github.itsarcn">
+    <name>ItsARCn</name>
+  </developer>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <description>
+    <p>
+      A native YouTube Music client written in Rust with no browser engine. It
+      starts quickly, plays music on this computer, and integrates with your
+      desktop's media controls and Discord Rich Presence.
+    </p>
+    <p>
+      Browse your library, search YouTube Music, manage playlists and the
+      queue, and view lyrics. It also has keyboard shortcuts, media-key support,
+      background playback, equalizer and visualizer effects, and a mini player
+      for classic Winamp skins.
+    </p>
+  </description>
+  <launchable type="desktop-id">io.github.itsarcn.Resonix.desktop</launchable>
+  <url type="homepage">https://github.com/ItsARCn/Resonix</url>
+  <url type="bugtracker">https://github.com/ItsARCn/Resonix/issues</url>
+  <url type="help">https://github.com/ItsARCn/Resonix#readme</url>
+  <url type="vcs-browser">https://github.com/ItsARCn/Resonix</url>
+  <screenshots>
+    <screenshot type="default">
+      <caption>Resonix main player view</caption>
+      <image>https://raw.githubusercontent.com/ItsARCn/Resonix/main/docs/screenshot.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>The mini player wearing the built-in Winamp skin</caption>
+      <image>https://raw.githubusercontent.com/ItsARCn/Resonix/main/docs/assets/images/winamp.png</image>
+    </screenshot>
+  </screenshots>
+  <branding>
+    <color type="primary" scheme_preference="light">#ff0000</color>
+    <color type="primary" scheme_preference="dark">#7f1d1d</color>
+  </branding>
+  <content_rating type="oars-1.1" />
+  <requires>
+    <display_length compare="ge">760</display_length>
+    <internet>always</internet>
+  </requires>
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+  </supports>
+  <releases>
+    <release version="0.17.2" date="2026-11-28">
+      <url>https://github.com/ItsARCn/Resonix/releases/tag/v0.17.2</url>
+    </release>
+  </releases>
+</component>

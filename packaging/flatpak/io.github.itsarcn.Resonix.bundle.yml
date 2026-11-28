@@ -1,0 +1,37 @@
+# The release workflow's Flatpak: the binary the Linux job built, packaged
+# into the same sandbox as io.github.itsarcn.Resonix.yml describes. The
+# job unpacks the release tarball into built/ beside this file first.
+id: io.github.itsarcn.Resonix
+runtime: org.freedesktop.Platform
+runtime-version: '25.08'
+sdk: org.freedesktop.Sdk
+command: resonix
+finish-args:
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --share=ipc
+  - --device=dri
+  - --socket=pulseaudio
+  - --filesystem=xdg-run/pipewire-0
+  - --share=network
+  - --talk-name=org.freedesktop.secrets
+  - --talk-name=org.kde.StatusNotifierWatcher
+  - --own-name=org.mpris.MediaPlayer2.resonix
+  - --persist=.local/state
+modules:
+  - name: resonix
+    buildsystem: simple
+    build-commands:
+      - install -Dm755 resonix /app/bin/resonix
+      - install -Dm644 packaging/applications/*.desktop /app/share/applications/io.github.itsarcn.Resonix.desktop
+      - sed -i 's/^Icon=.*$/Icon=io.github.itsarcn.Resonix/;s/^StartupWMClass=resonix$/StartupWMClass=io.github.itsarcn.Resonix/' /app/share/applications/io.github.itsarcn.Resonix.desktop
+      - install -Dm644 packaging/icons/*.svg /app/share/icons/hicolor/scalable/apps/io.github.itsarcn.Resonix.svg
+      - install -Dm644 packaging/flatpak/io.github.itsarcn.Resonix.metainfo.xml /app/share/metainfo/io.github.itsarcn.Resonix.metainfo.xml
+      - install -Dm644 LICENSE /app/share/licenses/resonix/LICENSE
+    sources:
+      - type: dir
+        path: built
+      # Metainfo belongs to this packaging checkout, not the portable archive.
+      - type: file
+        path: io.github.itsarcn.Resonix.metainfo.xml
+        dest: packaging/flatpak

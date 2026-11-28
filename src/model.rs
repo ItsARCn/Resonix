@@ -1537,7 +1537,7 @@ pub enum Action {
     /// Fetch one of projectM's preset packs into the folder, by its place
     /// in the list.
     DownloadMilkdropPack(usize),
-    DownloadTrack(crate::api::models::Track),
+    DownloadTrack(Box<crate::api::models::Track>),
     DownloadUris {
         collection_uri: Option<String>,
         label: String,
