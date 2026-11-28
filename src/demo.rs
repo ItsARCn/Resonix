@@ -3064,7 +3064,34 @@ mod tests {
             }
             app.lyrics_fullscreen = None;
             let tree = accessible_frame(&ctx, &mut app, vec![]);
-            let close = accessible_node(&tree, &gettext(locale, "Close"), Role::Button);
+            // Custom titlebar on Windows adds a top-right window Close button;
+            // match the lyrics header Close button by its shared row with expand.
+            let expand_id =
+                accessible_node(&tree, &gettext(locale, "Full screen lyrics"), Role::Button);
+            let expand_y = tree
+                .nodes
+                .iter()
+                .find(|(id, _)| *id == expand_id)
+                .and_then(|(_, node)| node.bounds())
+                .map(|rect| (rect.y0 + rect.y1) / 2.0)
+                .expect("bounds for Full screen lyrics");
+            let close_label = gettext(locale, "Close");
+            let close = tree
+                .nodes
+                .iter()
+                .filter(|(_, node)| {
+                    node.label() == Some(&*close_label) && node.role() == Role::Button
+                })
+                .min_by(|(_, a), (_, b)| {
+                    let dist = |node: &egui::accesskit::Node| {
+                        node.bounds()
+                            .map(|rect| ((rect.y0 + rect.y1) / 2.0 - expand_y).abs())
+                            .unwrap_or(f64::MAX)
+                    };
+                    dist(a).total_cmp(&dist(b))
+                })
+                .unwrap_or_else(|| panic!("missing {close_label:?} with role Button"))
+                .0;
             accessible_frame(
                 &ctx,
                 &mut app,

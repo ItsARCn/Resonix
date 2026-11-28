@@ -16686,7 +16686,9 @@ mod tests {
                     .rect
                     .center()
             } else {
-                egui::pos2(1120.0, 100.0)
+                // Keep y below the custom titlebar inset and lyrics header so
+                // Windows hits the scrollable lyrics body too.
+                egui::pos2(1120.0, 220.0)
             };
             let press = |button, pressed| egui::Event::PointerButton {
                 pos: anchor,
