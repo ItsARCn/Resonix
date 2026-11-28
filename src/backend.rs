@@ -1376,6 +1376,12 @@ impl Backend {
     }
 }
 
+impl Drop for Backend {
+    fn drop(&mut self) {
+        self.shutdown();
+    }
+}
+
 fn local_user() -> User {
     User {
         id: "local".into(),

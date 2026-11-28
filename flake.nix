@@ -126,7 +126,13 @@
                 allowBuiltinFetchGit = true;
               };
               # projectm-sys only searches lib, while CMake may otherwise install to lib64.
+              # Drop the repo's Cargo CMAKE_TOOLCHAIN_FILE override during Nix builds because Nix
+              # patches projectm-sys directly and cmake-rs skips compiler setup when a toolchain
+              # file is set.
               postPatch = ''
+                substituteInPlace .cargo/config.toml \
+                  --replace-fail '[env]' "" \
+                  --replace-fail 'CMAKE_TOOLCHAIN_FILE = { value = "packaging/rpm/libdir.cmake", relative = true }' ""
                 substituteInPlace "$cargoDepsCopy"/projectm-sys-*/build.rs \
                   --replace-fail \
                   '.define("BUILD_SHARED_LIBS", build_shared_libs)' \

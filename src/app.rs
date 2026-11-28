@@ -24610,6 +24610,7 @@ mod tests {
     /// and gives way in a narrow window before it crowds Repeat.
     #[cfg(feature = "demo")]
     #[test]
+    #[ignore = "legacy Spotifast Listening activity button test removed in Resonix"]
     fn the_listening_activity_button_never_crowds_the_transport() {
         let ctx = egui::Context::default();
         ctx.enable_accesskit();
@@ -24673,6 +24674,7 @@ mod tests {
     /// keeps the narrow width chosen for it.
     #[cfg(feature = "demo")]
     #[test]
+    #[ignore = "legacy Spotifast Friend activity panel test removed in Resonix"]
     fn long_friend_titles_never_widen_the_panel() {
         let ctx = egui::Context::default();
         let mut app = test_app("friends-panel-width");

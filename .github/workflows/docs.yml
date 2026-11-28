@@ -34,11 +34,12 @@ jobs:
           bundler-cache: true
           working-directory: docs
       - uses: actions/configure-pages@v5
+        id: pages
       - name: Build documentation site
         working-directory: docs
         env:
           JEKYLL_ENV: production
-        run: bundle exec jekyll-vitepress build --destination "${{ runner.temp }}/_site"
+        run: bundle exec jekyll-vitepress build --baseurl "${{ steps.pages.outputs.base_path }}" --destination "${{ runner.temp }}/_site"
       - uses: actions/upload-pages-artifact@v3
         with:
           path: ${{ runner.temp }}/_site
